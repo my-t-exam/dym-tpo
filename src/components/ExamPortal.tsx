@@ -71,15 +71,24 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
   const [membersList, setMembersList] = useState<Member[]>([]);
 
   useEffect(() => {
-    setExams(getStoredExams());
-    setAllSubmissions(getStoredSubmissions());
-    setSheetsUrl(getStoredSheetsUrl());
+    const refreshCacheData = () => {
+      setExams(getStoredExams());
+      setAllSubmissions(getStoredSubmissions());
+      setSheetsUrl(getStoredSheetsUrl());
 
-    // Use our new dynamic stored departments list
-    const depts = getStoredDepartments();
-    setDepartmentsList(depts);
-    setMembersList(getStoredMembers());
-    setTeamsMap(getStoredTeams());
+      // Use our new dynamic stored departments list
+      const depts = getStoredDepartments();
+      setDepartmentsList(depts);
+      setMembersList(getStoredMembers());
+      setTeamsMap(getStoredTeams());
+    };
+
+    // Load initial data
+    refreshCacheData();
+
+    // Start background refresh timer every 10 seconds to align with App.tsx database updates
+    const intervalId = setInterval(refreshCacheData, 10000);
+    return () => clearInterval(intervalId);
   }, [screen]);
 
   // Sync currentMember credentials immediately on load or account switch

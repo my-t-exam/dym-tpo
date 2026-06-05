@@ -37,9 +37,14 @@ const pushToBackend = async () => {
   }
 
   try {
-    const res = await fetch('/api/db', {
+    const res = await fetch(`/api/db?t=${Date.now()}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      },
       body: JSON.stringify(dbMemoryCache)
     });
     if (!res.ok) {
@@ -50,116 +55,157 @@ const pushToBackend = async () => {
   }
 };
 
+let isInitializingPromise: Promise<void> | null = null;
+
 export const initSharedDatabase = async (): Promise<void> => {
-  // 1. Populate dbMemoryCache from localStorage baseline first to guarantee non-empty data immediately
-  try {
-    const rawMembers = localStorage.getItem(MEMBERS_KEY);
-    dbMemoryCache.members = rawMembers ? JSON.parse(rawMembers) : defaultMembers;
-  } catch {
-    dbMemoryCache.members = defaultMembers;
-  }
+  if (isInitialized) {
+    // If already fully initialized, fetch newer updates from server directly as part of a background sync
+    try {
+      const res = await fetch(`/api/db?t=${Date.now()}`, { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        dbMemoryCache.exams = (data.exams && data.exams.length > 0) ? data.exams : dbMemoryCache.exams;
+        dbMemoryCache.submissions = (data.submissions && data.submissions.length > 0) ? data.submissions : dbMemoryCache.submissions;
+        dbMemoryCache.sheetsUrl = data.sheetsUrl || dbMemoryCache.sheetsUrl;
+        dbMemoryCache.members = (data.members && data.members.length > 0) ? data.members : dbMemoryCache.members;
+        dbMemoryCache.departments = (data.departments && data.departments.length > 0) ? data.departments : dbMemoryCache.departments;
+        dbMemoryCache.teams = (data.teams && Object.keys(data.teams).length > 0) ? data.teams : dbMemoryCache.teams;
 
-  try {
-    const rawExams = localStorage.getItem(EXAMS_KEY);
-    dbMemoryCache.exams = rawExams ? JSON.parse(rawExams) : sampleExams;
-  } catch {
-    dbMemoryCache.exams = sampleExams;
-  }
-
-  try {
-    const rawSubs = localStorage.getItem(SUBMISSIONS_KEY);
-    dbMemoryCache.submissions = rawSubs ? JSON.parse(rawSubs) : [];
-  } catch {
-    dbMemoryCache.submissions = [];
-  }
-
-  try {
-    const rawDepts = localStorage.getItem(DEPARTMENTS_KEY);
-    dbMemoryCache.departments = rawDepts ? JSON.parse(rawDepts) : defaultDepartments;
-  } catch {
-    dbMemoryCache.departments = defaultDepartments;
-  }
-
-  try {
-    const rawTeams = localStorage.getItem(TEAMS_KEY);
-    dbMemoryCache.teams = rawTeams ? JSON.parse(rawTeams) : {
-      'IT部': ['Development', 'Infra', 'QA'],
-      'マーケティング部': ['Growth', 'Content'],
-      'デザイン部': ['UI/UX', 'Branding'],
-      '人事部': ['HR', 'Recruiting'],
-      '事務代行': ['Admin Support']
-    };
-  } catch {
-    dbMemoryCache.teams = {};
-  }
-
-  try {
-    dbMemoryCache.sheetsUrl = localStorage.getItem(SHEETS_URL_KEY) || '';
-  } catch {
-    dbMemoryCache.sheetsUrl = '';
-  }
-
-  // Baseline loaded successfully
-  isInitialized = true;
-
-  // 2. Fetch the cloud server data as the single source of truth
-  try {
-    const res = await fetch('/api/db');
-    if (res.ok) {
-      const data = await res.json();
-      
-      // Update memory cache with server data, retaining local data if server returns empty/missing fields
-      dbMemoryCache.exams = (data.exams && data.exams.length > 0) ? data.exams : dbMemoryCache.exams;
-      dbMemoryCache.submissions = (data.submissions && data.submissions.length > 0) ? data.submissions : dbMemoryCache.submissions;
-      dbMemoryCache.sheetsUrl = data.sheetsUrl || dbMemoryCache.sheetsUrl;
-      dbMemoryCache.members = (data.members && data.members.length > 0) ? data.members : dbMemoryCache.members;
-      dbMemoryCache.departments = (data.departments && data.departments.length > 0) ? data.departments : dbMemoryCache.departments;
-      dbMemoryCache.teams = (data.teams && Object.keys(data.teams).length > 0) ? data.teams : dbMemoryCache.teams;
-
-      // Ensure LY TIEU MY superadmin is present in the cache
-      let updatedMembers = false;
-      const index = dbMemoryCache.members.findIndex(m => m.email.toLowerCase().trim() === 'my-t@dymvietnam.net');
-      if (index >= 0) {
-        if (dbMemoryCache.members[index].name !== 'LY TIEU MY' || dbMemoryCache.members[index].role !== 'superadmin') {
-          dbMemoryCache.members[index].name = 'LY TIEU MY';
-          dbMemoryCache.members[index].role = 'superadmin';
-          updatedMembers = true;
+        localStorage.setItem(MEMBERS_KEY, JSON.stringify(dbMemoryCache.members));
+        localStorage.setItem(EXAMS_KEY, JSON.stringify(dbMemoryCache.exams));
+        localStorage.setItem(SUBMISSIONS_KEY, JSON.stringify(dbMemoryCache.submissions));
+        localStorage.setItem(DEPARTMENTS_KEY, JSON.stringify(dbMemoryCache.departments));
+        localStorage.setItem(TEAMS_KEY, JSON.stringify(dbMemoryCache.teams));
+        if (dbMemoryCache.sheetsUrl) {
+          localStorage.setItem(SHEETS_URL_KEY, dbMemoryCache.sheetsUrl);
         }
-        if (!dbMemoryCache.members[index].password) {
-          dbMemoryCache.members[index].password = 'dym123';
-          updatedMembers = true;
-        }
-      } else {
-        dbMemoryCache.members.push({
-          id: 'm-user-lytieumy',
-          name: 'LY TIEU MY',
-          email: 'my-t@dymvietnam.net',
-          role: 'superadmin',
-          department: 'IT部',
-          password: 'dym123',
-          createdAt: new Date().toISOString()
-        });
-        updatedMembers = true;
       }
-
-      // Write updated caches back to localStorage
-      localStorage.setItem(MEMBERS_KEY, JSON.stringify(dbMemoryCache.members));
-      localStorage.setItem(EXAMS_KEY, JSON.stringify(dbMemoryCache.exams));
-      localStorage.setItem(SUBMISSIONS_KEY, JSON.stringify(dbMemoryCache.submissions));
-      localStorage.setItem(DEPARTMENTS_KEY, JSON.stringify(dbMemoryCache.departments));
-      localStorage.setItem(TEAMS_KEY, JSON.stringify(dbMemoryCache.teams));
-      if (dbMemoryCache.sheetsUrl) {
-        localStorage.setItem(SHEETS_URL_KEY, dbMemoryCache.sheetsUrl);
-      }
-
-      // If we modified client-side defaults, push back to server DB
-      if (updatedMembers) {
-        await pushToBackend();
-      }
+    } catch (e) {
+      console.error('Failed to update shared cache in background:', e);
     }
-  } catch (error) {
-    console.error('Failed to connect to shared database API, running with offline baseline:', error);
+    return;
   }
+
+  if (isInitializingPromise) {
+    return isInitializingPromise;
+  }
+
+  isInitializingPromise = (async () => {
+    // 1. Populate dbMemoryCache from localStorage baseline first to guarantee non-empty data immediately
+    try {
+      const rawMembers = localStorage.getItem(MEMBERS_KEY);
+      dbMemoryCache.members = rawMembers ? JSON.parse(rawMembers) : defaultMembers;
+    } catch {
+      dbMemoryCache.members = defaultMembers;
+    }
+
+    try {
+      const rawExams = localStorage.getItem(EXAMS_KEY);
+      dbMemoryCache.exams = rawExams ? JSON.parse(rawExams) : sampleExams;
+    } catch {
+      dbMemoryCache.exams = sampleExams;
+    }
+
+    try {
+      const rawSubs = localStorage.getItem(SUBMISSIONS_KEY);
+      dbMemoryCache.submissions = rawSubs ? JSON.parse(rawSubs) : [];
+    } catch {
+      dbMemoryCache.submissions = [];
+    }
+
+    try {
+      const rawDepts = localStorage.getItem(DEPARTMENTS_KEY);
+      dbMemoryCache.departments = rawDepts ? JSON.parse(rawDepts) : defaultDepartments;
+    } catch {
+      dbMemoryCache.departments = defaultDepartments;
+    }
+
+    try {
+      const rawTeams = localStorage.getItem(TEAMS_KEY);
+      dbMemoryCache.teams = rawTeams ? JSON.parse(rawTeams) : {
+        'IT部': ['Development', 'Infra', 'QA'],
+        'マーケティング部': ['Growth', 'Content'],
+        'デザイン部': ['UI/UX', 'Branding'],
+        '人事部': ['HR', 'Recruiting'],
+        '事務代行': ['Admin Support']
+      };
+    } catch {
+      dbMemoryCache.teams = {};
+    }
+
+    try {
+      dbMemoryCache.sheetsUrl = localStorage.getItem(SHEETS_URL_KEY) || '';
+    } catch {
+      dbMemoryCache.sheetsUrl = '';
+    }
+
+    // 2. Fetch the cloud server data as the single source of truth
+    try {
+      const res = await fetch(`/api/db?t=${Date.now()}`, { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        
+        // Update memory cache with server data, retaining local data if server returns empty/missing fields
+        dbMemoryCache.exams = (data.exams && data.exams.length > 0) ? data.exams : dbMemoryCache.exams;
+        dbMemoryCache.submissions = (data.submissions && data.submissions.length > 0) ? data.submissions : dbMemoryCache.submissions;
+        dbMemoryCache.sheetsUrl = data.sheetsUrl || dbMemoryCache.sheetsUrl;
+        dbMemoryCache.members = (data.members && data.members.length > 0) ? data.members : dbMemoryCache.members;
+        dbMemoryCache.departments = (data.departments && data.departments.length > 0) ? data.departments : dbMemoryCache.departments;
+        dbMemoryCache.teams = (data.teams && Object.keys(data.teams).length > 0) ? data.teams : dbMemoryCache.teams;
+
+        // Ensure LY TIEU MY superadmin is present in the cache
+        let updatedMembers = false;
+        const index = dbMemoryCache.members.findIndex(m => m.email.toLowerCase().trim() === 'my-t@dymvietnam.net');
+        if (index >= 0) {
+          if (dbMemoryCache.members[index].name !== 'LY TIEU MY' || dbMemoryCache.members[index].role !== 'superadmin') {
+            dbMemoryCache.members[index].name = 'LY TIEU MY';
+            dbMemoryCache.members[index].role = 'superadmin';
+            updatedMembers = true;
+          }
+          if (!dbMemoryCache.members[index].password) {
+            dbMemoryCache.members[index].password = 'dym123';
+            updatedMembers = true;
+          }
+        } else {
+          dbMemoryCache.members.push({
+            id: 'm-user-lytieumy',
+            name: 'LY TIEU MY',
+            email: 'my-t@dymvietnam.net',
+            role: 'superadmin',
+            department: 'IT部',
+            password: 'dym123',
+            createdAt: new Date().toISOString()
+          });
+          updatedMembers = true;
+        }
+
+        // Write updated caches back to localStorage
+        localStorage.setItem(MEMBERS_KEY, JSON.stringify(dbMemoryCache.members));
+        localStorage.setItem(EXAMS_KEY, JSON.stringify(dbMemoryCache.exams));
+        localStorage.setItem(SUBMISSIONS_KEY, JSON.stringify(dbMemoryCache.submissions));
+        localStorage.setItem(DEPARTMENTS_KEY, JSON.stringify(dbMemoryCache.departments));
+        localStorage.setItem(TEAMS_KEY, JSON.stringify(dbMemoryCache.teams));
+        if (dbMemoryCache.sheetsUrl) {
+          localStorage.setItem(SHEETS_URL_KEY, dbMemoryCache.sheetsUrl);
+        }
+
+        // Temporarily set isInitialized to true before push to bypass block
+        isInitialized = true;
+
+        // If we modified client-side defaults, push back to server DB
+        if (updatedMembers) {
+          await pushToBackend();
+        }
+      }
+    } catch (error) {
+      console.error('Failed to connect to shared database API, running with offline baseline:', error);
+    } finally {
+      isInitialized = true;
+      isInitializingPromise = null;
+    }
+  })();
+
+  return isInitializingPromise;
 };
 
 export const defaultMembers: Member[] = [

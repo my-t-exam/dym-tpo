@@ -205,6 +205,9 @@ async function startServer() {
 
   // API 2: Get whole DB
   app.get("/api/db", (req, res) => {
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
     try {
       if (!fs.existsSync(DB_PATH)) {
         return res.json({
@@ -226,6 +229,9 @@ async function startServer() {
 
   // API 3: Overwrite DB
   app.post("/api/db", (req, res) => {
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
     try {
       const newData = req.body;
       if (!newData) {
