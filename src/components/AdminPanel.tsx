@@ -104,34 +104,42 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
   const [syncingId, setSyncingId] = useState<string | null>(null);
   const [syncingAll, setSyncingAll] = useState(false);
 
-  // Load local databases on mount or currentMember change
+  // Load local databases on mount or currentMember change and refresh periodically in background
   useEffect(() => {
-    setExams(getStoredExams());
-    setSheetsUrl(getStoredSheetsUrl());
-    
-    const storedM = getStoredMembers();
-    const allSubs = getStoredSubmissions();
-
-    if (currentMember && currentMember.role === 'admin') {
-      const userDept = currentMember.department;
-      setSelectedDeptFilter(userDept);
+    const refreshData = () => {
+      setExams(getStoredExams());
+      setSheetsUrl(getStoredSheetsUrl());
       
-      // Filter members of admin department
-      const deptMembers = storedM.filter(m => m.department === userDept);
-      setMembers(deptMembers);
+      const storedM = getStoredMembers();
+      const allSubs = getStoredSubmissions();
 
-      // Filter submissions of admin department
-      const deptSubs = allSubs.filter((sub) => {
-        const matchM = storedM.find(m => m.email.toLowerCase().trim() === sub.employeeEmail?.toLowerCase().trim());
-        const candidateDept = matchM?.department || sub.employeeDepartment;
-        return candidateDept === userDept;
-      });
-      setSubmissions(deptSubs);
-    } else {
-      setMembers(storedM);
-      setSubmissions(allSubs);
-      setSelectedDeptFilter('all');
-    }
+      if (currentMember && currentMember.role === 'admin') {
+        const userDept = currentMember.department;
+        setSelectedDeptFilter(userDept);
+        
+        // Filter members of admin department
+        const deptMembers = storedM.filter(m => m.department === userDept);
+        setMembers(deptMembers);
+
+        // Filter submissions of admin department
+        const deptSubs = allSubs.filter((sub) => {
+          const matchM = storedM.find(m => m.email.toLowerCase().trim() === sub.employeeEmail?.toLowerCase().trim());
+          const candidateDept = matchM?.department || sub.employeeDepartment;
+          return candidateDept === userDept;
+        });
+        setSubmissions(deptSubs);
+      } else {
+        setMembers(storedM);
+        setSubmissions(allSubs);
+        setSelectedDeptFilter('all');
+      }
+    };
+
+    refreshData();
+
+    // Refresh dashboard UI state from synchronized cache every 10 seconds
+    const intervalId = setInterval(refreshData, 10000);
+    return () => clearInterval(intervalId);
   }, [currentMember]);
 
   // Handle dashboard default exam trigger

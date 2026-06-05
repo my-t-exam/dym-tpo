@@ -59,6 +59,15 @@ export default function App() {
     };
 
     loadDb();
+
+    // Start background sync every 10 seconds to sync with other browsers in real-time
+    const intervalId = setInterval(async () => {
+      await initSharedDatabase();
+      const storedM = getStoredMembers();
+      setMembers(storedM);
+    }, 10000);
+
+    return () => clearInterval(intervalId);
   }, []);
 
   const handleLogout = () => {
