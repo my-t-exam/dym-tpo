@@ -1,0 +1,8 @@
+{
+  "name": "Remix: Employee Testing System",
+  "description": "Hệ thống kiểm tra nội bộ dành cho nhân viên, tự động chấm điểm trắc nghiệm và báo cáo kết quả.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

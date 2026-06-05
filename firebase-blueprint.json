@@ -1,0 +1,50 @@
+{
+  "entities": {
+    "exam": {
+      "title": "Exam Configuration",
+      "description": "Represents an internal exam created by an administrator.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier of the exam" },
+        "title": { "type": "string", "description": "Title of the exam" },
+        "description": { "type": "string", "description": "Instructions or description" },
+        "startTime": { "type": "string", "format": "date-time", "description": "Start time of the exam" },
+        "endTime": { "type": "string", "format": "date-time", "description": "End time/cutoff of the exam" },
+        "duration": { "type": "number", "description": "Duration in minutes" },
+        "questions": {
+          "type": "array",
+          "description": "List of questions for the exam"
+        },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" }
+      },
+      "required": ["id", "title", "startTime", "endTime", "duration", "questions"]
+    },
+    "submission": {
+      "title": "Exam Submission",
+      "description": "Represents an exam session / response submitted by an employee.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier of the submission" },
+        "examId": { "type": "string", "description": "Reference ID of the exam" },
+        "examTitle": { "type": "string", "description": "Title of the exam for quick reporting" },
+        "employeeName": { "type": "string", "description": "Full name of the employee" },
+        "employeeEmail": { "type": "string", "description": "Email address of the employee" },
+        "answers": { "type": "object", "description": "Key-value pair of question ID to selected option index or index array" },
+        "score": { "type": "number", "description": "Automatically graded score" },
+        "maxScore": { "type": "number", "description": "Maximum possible score" },
+        "submittedAt": { "type": "string", "format": "date-time", "description": "Time the exam was submitted or auto-submitted" }
+      },
+      "required": ["id", "examId", "examTitle", "employeeName", "employeeEmail", "answers", "score", "maxScore", "submittedAt"]
+    }
+  },
+  "firestore": {
+    "/exams/{examId}": {
+      "schema": "exam",
+      "description": "Collection of exams configured by admins"
+    },
+    "/submissions/{submissionId}": {
+      "schema": "submission",
+      "description": "Collection of exam submissions by employee participants"
+    }
+  }
+}

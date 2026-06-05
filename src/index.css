@@ -1,0 +1,180 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: Calibri, Candara, "Segoe UI", Optima, Arial, sans-serif;
+  --font-serif: Calibri, Candara, "Segoe UI", Optima, Arial, sans-serif;
+  
+  /* Scale font sizes slightly larger for comfortable reading */
+  --font-size-xs: 0.8125rem;   /* ~13px instead of 12px */
+  --font-size-sm: 0.9375rem;   /* ~15px instead of 14px */
+  --font-size-base: 1.0625rem; /* ~17px instead of 16px */
+  --font-size-lg: 1.175rem;    /* ~19px instead of 18px */
+  --font-size-xl: 1.325rem;    /* ~21px instead of 20px */
+  --font-size-2xl: 1.625rem;   /* ~26px instead of 24px */
+  --font-size-3xl: 2.0rem;     /* ~32px instead of 30px */
+}
+
+/* Force Calibri as the global font for all text and elements */
+html, body, button, input, select, textarea, div, p, span, h1, h2, h3, h4, h5, h6 {
+  font-family: Calibri, Candara, "Segoe UI", Optima, Arial, sans-serif !important;
+}
+
+:root {
+  /* LIGHT MODE - PRIORITIZING MODERN PRESTIGIOUS MIDNIGHT BLUE / NAVY */
+  --bg-primary: #f2f5fa;       /* Very gentle muted blue-grey */
+  --bg-secondary: #ffffff;     /* Card background: pure white */
+  --bg-tertiary: #f8fafc;      /* Gentle blue-grey white */
+  --border-color: #cbd5e1;     /* Slate-300 border */
+  --text-primary: #0f172a;     /* Slate-900 */
+  --text-secondary: #334155;   /* Slate-700 comfortable dark read */
+  --text-muted: #64748b;       /* Slate-500 */
+  --brand-primary: #122448;    /* Elegant midnight navy/dark blue (Xanh đen dym) */
+  --brand-hover: #1b3566;      /* Medium Deep Navy */
+  --brand-accent: #2b5cb3;     /* Sleek modern accent blue */
+  --brand-bg-light: #eef4fc;   /* Light tint blue background */
+}
+
+/* Base Body Styles */
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+/* Deep Class Override mappings for perfect seamless theme swap without codebase pollution */
+
+/* Background replacements */
+.bg-\[\#FDFBF7\] {
+  background-color: var(--bg-primary) !important;
+}
+.bg-white {
+  background-color: var(--bg-secondary) !important;
+}
+.bg-white\/70 {
+  background-color: color-mix(in srgb, var(--bg-secondary) 70%, transparent) !important;
+}
+.bg-\[\#FAF8F2\] {
+  background-color: var(--bg-tertiary) !important;
+}
+.bg-\[\#F9F8F5\] {
+  background-color: var(--bg-tertiary) !important;
+}
+.bg-slate-50 {
+  background-color: var(--bg-tertiary) !important;
+}
+
+/* Brand Background Replacements */
+.bg-\[\#5A5A40\] {
+  background-color: var(--brand-primary) !important;
+}
+.bg-\[\#5A5A40\]\/10 {
+  background-color: color-mix(in srgb, var(--brand-primary) 12%, transparent) !important;
+}
+.bg-\[\#5A5A40\]\/5 {
+  background-color: color-mix(in srgb, var(--brand-primary) 6%, transparent) !important;
+}
+
+/* Hover States */
+.hover\:bg-\[\#4D4D36\]:hover {
+  background-color: var(--brand-hover) !important;
+}
+.hover\:bg-\[\#5A5A40\]\/25:hover {
+  background-color: color-mix(in srgb, var(--brand-primary) 28%, transparent) !important;
+}
+
+/* Text Swaps */
+.text-\[\#1A1A1A\] {
+  color: var(--text-primary) !important;
+}
+.text-slate-800 {
+  color: var(--text-primary) !important;
+}
+.text-slate-700 {
+  color: var(--text-primary) !important;
+}
+.text-slate-600 {
+  color: var(--text-secondary) !important;
+}
+.text-slate-500 {
+  color: var(--text-secondary) !important;
+}
+.text-slate-400 {
+  color: var(--text-muted) !important;
+}
+.text-\[\#5A5A40\] {
+  color: var(--brand-primary) !important;
+}
+.text-\[\#5A5A40\]\/50 {
+  color: color-mix(in srgb, var(--brand-primary) 50%, transparent) !important;
+}
+.text-\[\#5A5A40\]\/55 {
+  color: color-mix(in srgb, var(--brand-primary) 55%, transparent) !important;
+}
+.text-\[\#5A5A40\]\/60 {
+  color: color-mix(in srgb, var(--brand-primary) 60%, transparent) !important;
+}
+.text-\[\#5A5A40\]\/70 {
+  color: color-mix(in srgb, var(--brand-primary) 70%, transparent) !important;
+}
+.text-\[\#5A5A40\]\/75 {
+  color: color-mix(in srgb, var(--brand-primary) 75%, transparent) !important;
+}
+.text-\[\#5A5A40\]\/80 {
+  color: color-mix(in srgb, var(--brand-primary) 80%, transparent) !important;
+}
+
+/* Border replacements */
+.border-\[\#E5E2D9\] {
+  border-color: var(--border-color) !important;
+}
+.border-\[\#EBE8DF\] {
+  border-color: var(--border-color) !important;
+}
+.border-\[\#5A5A40\] {
+  border-color: var(--brand-primary) !important;
+}
+.border-\[\#5A5A40\]\/40 {
+  border-color: color-mix(in srgb, var(--brand-primary) 40%, transparent) !important;
+}
+.border-\[\#5A5A40\]\/25 {
+  border-color: color-mix(in srgb, var(--brand-primary) 25%, transparent) !important;
+}
+.border-\[\#5A5A40\]\/15 {
+  border-color: color-mix(in srgb, var(--brand-primary) 15%, transparent) !important;
+}
+.border-\[\#5A5A40\]\/20 {
+  border-color: color-mix(in srgb, var(--brand-primary) 20%, transparent) !important;
+}
+
+/* Specific styling for forms input placeholders */
+input::placeholder {
+  color: var(--text-muted) !important;
+  opacity: 0.7;
+}
+
+/* Handle the floating hero cover banner (#marketing-canvas) */
+#marketing-canvas {
+  background-color: var(--brand-primary) !important;
+  color: var(--bg-primary) !important;
+}
+
+/* Override input files and selects background */
+input, select, textarea {
+  background-color: var(--bg-tertiary) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-color) !important;
+}
+input:focus, select:focus, textarea:focus {
+  border-color: var(--brand-primary) !important;
+}
+
+/* Ensure selected states keep nice theme accent */
+.bg-\[\#5A5A40\]\/5 {
+  background-color: color-mix(in srgb, var(--brand-primary) 8%, transparent) !important;
+}
+
+/* Custom transitions */
+.transition-colors, .transition {
+  transition-property: background-color, border-color, color, fill, stroke !important;
+  transition-duration: 150ms !important;
+}
