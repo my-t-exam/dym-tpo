@@ -78,16 +78,7 @@ export default function App() {
     }
 
     if (loginTab === 'member') {
-      // Employees login easily
-      if (matched.role === 'admin' || matched.role === 'superadmin') {
-        setLoginError(lang === 'vi' 
-          ? 'Đây là tài khoản quản trị viên. Vui lòng chuyển sang tab "Quản trị viên" để nhập mật khẩu!' 
-          : 'これは管理者アカウントです。管理者タブ選択後、パスワードを入力してログインしてください。'
-        );
-        return;
-      }
-      
-      // Success login for regular member - direct entry
+      // Employees and Admins login easily to take exams
       setCurrentMember(matched);
       localStorage.setItem('employee_testing_current_member_id', matched.id);
       setLoginEmail('');
@@ -346,8 +337,8 @@ export default function App() {
               </div>
 
               {loginError && (
-                <div className="bg-rose-50 text-rose-600 border border-rose-100 p-3 rounded-lg text-xs font-bold leading-relaxed">
-                  {loginError}
+                <div className="bg-rose-50 border border-rose-100 p-3.5 rounded-lg text-xs leading-relaxed">
+                  <div className="font-bold text-rose-600">{loginError}</div>
                 </div>
               )}
 
@@ -395,6 +386,7 @@ export default function App() {
                   {lang === 'vi' ? 'Xác nhận vào hệ thống' : 'システムにサインイン'}
                   <ChevronRight className="w-4 h-4" />
                 </button>
+
               </form>
 
               <div className="bg-[#5A5A40]/5 border border-[#5A5A40]/10 rounded-xl p-4 text-[11px] text-[#5A5A40] space-y-1.5 leading-relaxed font-medium">
@@ -592,6 +584,7 @@ export default function App() {
           </div>
         </div>
       )}
+
     </div>
   );
 }
