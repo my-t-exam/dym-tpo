@@ -9,7 +9,7 @@ import ExamPortal from './components/ExamPortal';
 import AdminPanel from './components/AdminPanel';
 import { Member, Language } from './types';
 import { 
-  getStoredMembers, saveMembers, getStoredLanguage, saveLanguage 
+  getStoredMembers, saveMembers, getStoredLanguage, saveLanguage, initSharedDatabase
 } from './lib/database';
 import { translations } from './data/translations';
 
@@ -18,6 +18,7 @@ export default function App() {
   const [members, setMembers] = useState<Member[]>([]);
   const [currentMember, setCurrentMember] = useState<Member | null>(null);
   const [isAdminMode, setIsAdminMode] = useState<boolean>(false);
+  const [isDbReady, setIsDbReady] = useState(false);
 
   // Secure password-supported authentication fields
   const [loginTab, setLoginTab] = useState<'member' | 'admin'>('member');
@@ -34,24 +35,30 @@ export default function App() {
 
   // Load identity and language configurations
   useEffect(() => {
-    const storedM = getStoredMembers();
-    setMembers(storedM);
-    
-    // Check if there is already an active session from local storage
-    const activeMemberId = localStorage.getItem('employee_testing_current_member_id');
-    if (activeMemberId) {
-      const found = storedM.find(m => m.id === activeMemberId);
-      if (found) {
-        setCurrentMember(found);
+    const loadDb = async () => {
+      await initSharedDatabase();
+      const storedM = getStoredMembers();
+      setMembers(storedM);
+      
+      // Check if there is already an active session from local storage
+      const activeMemberId = localStorage.getItem('employee_testing_current_member_id');
+      if (activeMemberId) {
+        const found = storedM.find(m => m.id === activeMemberId);
+        if (found) {
+          setCurrentMember(found);
+        } else {
+          setCurrentMember(null);
+        }
       } else {
         setCurrentMember(null);
       }
-    } else {
-      setCurrentMember(null);
-    }
 
-    const storedLang = getStoredLanguage();
-    setLang(storedLang);
+      const storedLang = getStoredLanguage();
+      setLang(storedLang);
+      setIsDbReady(true);
+    };
+
+    loadDb();
   }, []);
 
   const handleLogout = () => {
@@ -178,6 +185,19 @@ export default function App() {
     setLang(selectedLang);
     saveLanguage(selectedLang);
   };
+
+  if (!isDbReady) {
+    return (
+      <div className="min-h-screen bg-[#FDFBF7] flex flex-col items-center justify-center font-sans">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-4 border-[#122448] border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-[#122448] font-bold text-sm tracking-wide">
+            Đang tải dữ liệu thi cử...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const t = translations[lang];
 

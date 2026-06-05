@@ -12,6 +12,51 @@ const SHEETS_URL_KEY = 'employee_testing_sheets_url';
 const MEMBERS_KEY = 'employee_testing_members';
 const LANGUAGE_KEY = 'employee_testing_language';
 
+// Centralized dynamic server-synced memory cache
+let dbMemoryCache = {
+  exams: [] as Exam[],
+  submissions: [] as Submission[],
+  sheetsUrl: '',
+  members: [] as Member[],
+  departments: [] as string[],
+  teams: {} as Record<string, string[]>
+};
+
+let isInitialized = false;
+
+export const initSharedDatabase = async (): Promise<void> => {
+  try {
+    const res = await fetch('/api/db');
+    if (res.ok) {
+      const data = await res.json();
+      dbMemoryCache = {
+        exams: data.exams || [],
+        submissions: data.submissions || [],
+        sheetsUrl: data.sheetsUrl || '',
+        members: data.members || [],
+        departments: data.departments || [],
+        teams: data.teams || {}
+      };
+      isInitialized = true;
+    }
+  } catch (error) {
+    console.error('Failed to connect to shared database API:', error);
+    isInitialized = true;
+  }
+};
+
+const pushToBackend = async () => {
+  try {
+    await fetch('/api/db', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(dbMemoryCache)
+    });
+  } catch (error) {
+    console.error('Failed to sync to shared database API:', error);
+  }
+};
+
 export const defaultMembers: Member[] = [
   {
     id: 'm1',
@@ -85,124 +130,126 @@ export const defaultMembers: Member[] = [
 ];
 
 export const getStoredMembers = (): Member[] => {
-  try {
-    const raw = localStorage.getItem(MEMBERS_KEY);
-    if (!raw) {
-      localStorage.setItem(MEMBERS_KEY, JSON.stringify(defaultMembers));
-      return defaultMembers;
+  if (!isInitialized || dbMemoryCache.members.length === 0) {
+    try {
+      const raw = localStorage.getItem(MEMBERS_KEY);
+      if (raw) {
+        dbMemoryCache.members = JSON.parse(raw);
+      } else {
+        dbMemoryCache.members = defaultMembers;
+      }
+    } catch {
+      dbMemoryCache.members = defaultMembers;
     }
-    const parsed = JSON.parse(raw) as Member[];
-    
-    // Ensure all superadmins & admins have 'dym123' password if none is set
-    let updated = false;
-    const patched = parsed.map(m => {
-      if ((m.role === 'superadmin' || m.role === 'admin') && !m.password) {
-        updated = true;
-        return { ...m, password: 'dym123' };
-      }
-      return m;
-    });
+  }
 
-    // PROACTIVE PATCH: Ensure LY TIEU MY exists and has Super Admin role
-    const index = patched.findIndex(m => m.email.toLowerCase().trim() === 'my-t@dymvietnam.net');
-    if (index >= 0) {
-      if (patched[index].name !== 'LY TIEU MY' || patched[index].role !== 'superadmin') {
-        patched[index].name = 'LY TIEU MY';
-        patched[index].role = 'superadmin';
-        updated = true;
-      }
-      if (!patched[index].password) {
-        patched[index].password = 'dym123';
-        updated = true;
-      }
-    } else {
-      patched.push({
-        id: 'm-user-lytieumy',
-        name: 'LY TIEU MY',
-        email: 'my-t@dymvietnam.net',
-        role: 'superadmin',
-        department: 'IT部',
-        password: 'dym123',
-        createdAt: new Date().toISOString()
-      });
+  // Ensure all superadmins & admins have 'dym123' password if none is set
+  let updated = false;
+  dbMemoryCache.members = dbMemoryCache.members.map(m => {
+    if ((m.role === 'superadmin' || m.role === 'admin') && !m.password) {
+      updated = true;
+      return { ...m, password: 'dym123' };
+    }
+    return m;
+  });
+
+  // PROACTIVE PATCH: Ensure LY TIEU MY exists and has Super Admin role
+  const index = dbMemoryCache.members.findIndex(m => m.email.toLowerCase().trim() === 'my-t@dymvietnam.net');
+  if (index >= 0) {
+    if (dbMemoryCache.members[index].name !== 'LY TIEU MY' || dbMemoryCache.members[index].role !== 'superadmin') {
+      dbMemoryCache.members[index].name = 'LY TIEU MY';
+      dbMemoryCache.members[index].role = 'superadmin';
       updated = true;
     }
-
-    if (updated) {
-      localStorage.setItem(MEMBERS_KEY, JSON.stringify(patched));
+    if (!dbMemoryCache.members[index].password) {
+      dbMemoryCache.members[index].password = 'dym123';
+      updated = true;
     }
-    return patched;
-  } catch (e) {
-    console.error('Error reading members from localStorage', e);
-    return defaultMembers;
+  } else {
+    dbMemoryCache.members.push({
+      id: 'm-user-lytieumy',
+      name: 'LY TIEU MY',
+      email: 'my-t@dymvietnam.net',
+      role: 'superadmin',
+      department: 'IT部',
+      password: 'dym123',
+      createdAt: new Date().toISOString()
+    });
+    updated = true;
   }
+
+  if (updated) {
+    localStorage.setItem(MEMBERS_KEY, JSON.stringify(dbMemoryCache.members));
+    pushToBackend();
+  }
+  return dbMemoryCache.members;
 };
 
 const DEPARTMENTS_KEY = 'employee_testing_departments';
 export const defaultDepartments = ['事務代行', 'マーケティング部', 'IT部', 'デザイン部', '人事部'];
 
 export const getStoredDepartments = (): string[] => {
-  try {
-    const raw = localStorage.getItem(DEPARTMENTS_KEY);
-    if (!raw) {
-      localStorage.setItem(DEPARTMENTS_KEY, JSON.stringify(defaultDepartments));
-      return defaultDepartments;
+  if (!isInitialized || dbMemoryCache.departments.length === 0) {
+    try {
+      const raw = localStorage.getItem(DEPARTMENTS_KEY);
+      if (raw) {
+        dbMemoryCache.departments = JSON.parse(raw);
+      } else {
+        dbMemoryCache.departments = defaultDepartments;
+      }
+    } catch {
+      dbMemoryCache.departments = defaultDepartments;
     }
-    const parsed = JSON.parse(raw) as string[];
-    // PROACTIVE PATCH: Normalize list to exact five active corporate departments requested if previous values present
-    if (parsed.includes('業務部') || parsed.includes('総務人事部') || parsed.length === 4) {
-      localStorage.setItem(DEPARTMENTS_KEY, JSON.stringify(defaultDepartments));
-      return defaultDepartments;
-    }
-    return parsed;
-  } catch (e) {
-    return defaultDepartments;
   }
+
+  if (dbMemoryCache.departments.includes('業務部') || dbMemoryCache.departments.includes('総務人事部') || dbMemoryCache.departments.length === 4) {
+    dbMemoryCache.departments = defaultDepartments;
+    localStorage.setItem(DEPARTMENTS_KEY, JSON.stringify(defaultDepartments));
+    pushToBackend();
+  }
+  return dbMemoryCache.departments;
 };
 
 export const saveDepartments = (depts: string[]) => {
-  try {
-    localStorage.setItem(DEPARTMENTS_KEY, JSON.stringify(depts));
-  } catch (e) {
-    console.error('Error saving departments to localStorage', e);
-  }
+  dbMemoryCache.departments = depts;
+  localStorage.setItem(DEPARTMENTS_KEY, JSON.stringify(depts));
+  pushToBackend();
 };
 
 const TEAMS_KEY = 'employee_testing_dept_teams';
 export const getStoredTeams = (): Record<string, string[]> => {
-  try {
-    const raw = localStorage.getItem(TEAMS_KEY);
-    if (!raw) {
-      const defaultTeams: Record<string, string[]> = {
-        'IT部': ['Development', 'Infra', 'QA'],
-        'マーケティング部': ['Growth', 'Content'],
-        'デザイン部': ['UI/UX', 'Branding'],
-        '人事部': ['HR', 'Recruiting'],
-        '事務代行': ['Admin Support']
-      };
-      localStorage.setItem(TEAMS_KEY, JSON.stringify(defaultTeams));
-      return defaultTeams;
+  if (!isInitialized || Object.keys(dbMemoryCache.teams).length === 0) {
+    try {
+      const raw = localStorage.getItem(TEAMS_KEY);
+      if (raw) {
+        dbMemoryCache.teams = JSON.parse(raw);
+      } else {
+        const defaultTeams: Record<string, string[]> = {
+          'IT部': ['Development', 'Infra', 'QA'],
+          'マーケティング部': ['Growth', 'Content'],
+          'デザイン部': ['UI/UX', 'Branding'],
+          '人事部': ['HR', 'Recruiting'],
+          '事務代行': ['Admin Support']
+        };
+        dbMemoryCache.teams = defaultTeams;
+      }
+    } catch {
+      dbMemoryCache.teams = {};
     }
-    return JSON.parse(raw);
-  } catch {
-    return {};
   }
+  return dbMemoryCache.teams;
 };
 
 export const saveStoredTeams = (teams: Record<string, string[]>) => {
-  try {
-    localStorage.setItem(TEAMS_KEY, JSON.stringify(teams));
-  } catch (e) {
-    console.error('Error saving teams to localStorage', e);
-  }
+  dbMemoryCache.teams = teams;
+  localStorage.setItem(TEAMS_KEY, JSON.stringify(teams));
+  pushToBackend();
 };
 
 export const saveMembers = (members: Member[]) => {
-  try {
-    localStorage.setItem(MEMBERS_KEY, JSON.stringify(members));
-  } catch (e) {
-    console.error('Error saving members to localStorage', e);
-  }
+  dbMemoryCache.members = members;
+  localStorage.setItem(MEMBERS_KEY, JSON.stringify(members));
+  pushToBackend();
 };
 
 export const getStoredLanguage = (): Language => {
@@ -223,59 +270,64 @@ export const saveLanguage = (lang: Language) => {
 };
 
 export const getStoredExams = (): Exam[] => {
-  try {
-    const raw = localStorage.getItem(EXAMS_KEY);
-    if (!raw) {
-      localStorage.setItem(EXAMS_KEY, JSON.stringify(sampleExams));
-      return sampleExams;
+  if (!isInitialized || dbMemoryCache.exams.length === 0) {
+    try {
+      const raw = localStorage.getItem(EXAMS_KEY);
+      if (raw) {
+        dbMemoryCache.exams = JSON.parse(raw);
+      } else {
+        dbMemoryCache.exams = sampleExams;
+      }
+    } catch {
+      dbMemoryCache.exams = sampleExams;
     }
-    return JSON.parse(raw);
-  } catch (e) {
-    console.error('Error reading exams from localStorage', e);
-    return sampleExams;
   }
+  return dbMemoryCache.exams;
 };
 
 export const saveExams = (exams: Exam[]) => {
-  try {
-    localStorage.setItem(EXAMS_KEY, JSON.stringify(exams));
-  } catch (e) {
-    console.error('Error saving exams to localStorage', e);
-  }
+  dbMemoryCache.exams = exams;
+  localStorage.setItem(EXAMS_KEY, JSON.stringify(exams));
+  pushToBackend();
 };
 
 export const getStoredSubmissions = (): Submission[] => {
-  try {
-    const raw = localStorage.getItem(SUBMISSIONS_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch (e) {
-    console.error('Error reading submissions from localStorage', e);
-    return [];
+  if (!isInitialized || dbMemoryCache.submissions.length === 0) {
+    try {
+      const raw = localStorage.getItem(SUBMISSIONS_KEY);
+      if (raw) {
+        dbMemoryCache.submissions = JSON.parse(raw);
+      } else {
+        dbMemoryCache.submissions = [];
+      }
+    } catch {
+      dbMemoryCache.submissions = [];
+    }
   }
+  return dbMemoryCache.submissions;
 };
 
 export const saveSubmissions = (submissions: Submission[]) => {
-  try {
-    localStorage.setItem(SUBMISSIONS_KEY, JSON.stringify(submissions));
-  } catch (e) {
-    console.error('Error saving submissions to localStorage', e);
-  }
+  dbMemoryCache.submissions = submissions;
+  localStorage.setItem(SUBMISSIONS_KEY, JSON.stringify(submissions));
+  pushToBackend();
 };
 
 export const getStoredSheetsUrl = (): string => {
-  try {
-    return localStorage.getItem(SHEETS_URL_KEY) || '';
-  } catch {
-    return '';
+  if (!isInitialized || !dbMemoryCache.sheetsUrl) {
+    try {
+      dbMemoryCache.sheetsUrl = localStorage.getItem(SHEETS_URL_KEY) || '';
+    } catch {
+      dbMemoryCache.sheetsUrl = '';
+    }
   }
+  return dbMemoryCache.sheetsUrl;
 };
 
 export const saveSheetsUrl = (url: string) => {
-  try {
-    localStorage.setItem(SHEETS_URL_KEY, url);
-  } catch (e) {
-    console.error('Error saving Google Sheets URL', e);
-  }
+  dbMemoryCache.sheetsUrl = url;
+  localStorage.setItem(SHEETS_URL_KEY, url);
+  pushToBackend();
 };
 
 /**
