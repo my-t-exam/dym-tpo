@@ -24,27 +24,6 @@ let dbMemoryCache = {
 
 let isInitialized = false;
 
-export const initSharedDatabase = async (): Promise<void> => {
-  try {
-    const res = await fetch('/api/db');
-    if (res.ok) {
-      const data = await res.json();
-      dbMemoryCache = {
-        exams: data.exams || [],
-        submissions: data.submissions || [],
-        sheetsUrl: data.sheetsUrl || '',
-        members: data.members || [],
-        departments: data.departments || [],
-        teams: data.teams || {}
-      };
-      isInitialized = true;
-    }
-  } catch (error) {
-    console.error('Failed to connect to shared database API:', error);
-    isInitialized = true;
-  }
-};
-
 const pushToBackend = async () => {
   try {
     await fetch('/api/db', {
@@ -54,6 +33,122 @@ const pushToBackend = async () => {
     });
   } catch (error) {
     console.error('Failed to sync to shared database API:', error);
+  }
+};
+
+export const initSharedDatabase = async (): Promise<void> => {
+  try {
+    const res = await fetch('/api/db');
+    if (res.ok) {
+      const data = await res.json();
+      
+      // 1. Read existing local data to merge
+      let localMembers: Member[] = [];
+      let localExams: Exam[] = [];
+      let localSubmissions: Submission[] = [];
+      let localDepartments: string[] = [];
+      let localTeams: Record<string, string[]> = {};
+      let localSheetsUrl = '';
+
+      try {
+        const mRaw = localStorage.getItem(MEMBERS_KEY);
+        if (mRaw) localMembers = JSON.parse(mRaw);
+      } catch {}
+      try {
+        const eRaw = localStorage.getItem(EXAMS_KEY);
+        if (eRaw) localExams = JSON.parse(eRaw);
+      } catch {}
+      try {
+        const sRaw = localStorage.getItem(SUBMISSIONS_KEY);
+        if (sRaw) localSubmissions = JSON.parse(sRaw);
+      } catch {}
+      try {
+        const dRaw = localStorage.getItem(DEPARTMENTS_KEY);
+        if (dRaw) localDepartments = JSON.parse(dRaw);
+      } catch {}
+      try {
+        const tRaw = localStorage.getItem(TEAMS_KEY);
+        if (tRaw) localTeams = JSON.parse(tRaw);
+      } catch {}
+      try {
+        localSheetsUrl = localStorage.getItem(SHEETS_URL_KEY) || '';
+      } catch {}
+
+      // 2. Perform Union-Merge to avoid overwriting user edits
+      // Members merge: union by email (case-insensitive) or ID
+      const serverMembers: Member[] = data.members || [];
+      const mergedMembers = [...serverMembers];
+      localMembers.forEach(lm => {
+        const exists = mergedMembers.some(sm => 
+          sm.email.toLowerCase().trim() === lm.email.toLowerCase().trim() || sm.id === lm.id
+        );
+        if (!exists) {
+          mergedMembers.push(lm);
+        }
+      });
+
+      // Exams merge: union by id
+      const serverExams: Exam[] = data.exams || [];
+      const mergedExams = [...serverExams];
+      localExams.forEach(le => {
+        const exists = mergedExams.some(se => se.id === le.id);
+        if (!exists) {
+          mergedExams.push(le);
+        }
+      });
+
+      // Submissions merge: union by id
+      const serverSubmissions: Submission[] = data.submissions || [];
+      const mergedSubmissions = [...serverSubmissions];
+      localSubmissions.forEach(ls => {
+        const exists = mergedSubmissions.some(ss => ss.id === ls.id);
+        if (!exists) {
+          mergedSubmissions.push(ls);
+        }
+      });
+
+      // Departments merge
+      const serverDepts: string[] = data.departments || [];
+      const mergedDepts = Array.from(new Set([...serverDepts, ...localDepartments])).filter(Boolean);
+
+      // Teams merge
+      const serverTeams: Record<string, string[]> = data.teams || {};
+      const mergedTeams = { ...serverTeams };
+      Object.keys(localTeams).forEach(dept => {
+        mergedTeams[dept] = Array.from(new Set([...(mergedTeams[dept] || []), ...(localTeams[dept] || [])]));
+      });
+
+      // Sheets URL
+      const mergedSheetsUrl = data.sheetsUrl || localSheetsUrl;
+
+      // 3. Update memory cache with fully merged assets
+      dbMemoryCache = {
+        exams: mergedExams,
+        submissions: mergedSubmissions,
+        sheetsUrl: mergedSheetsUrl,
+        members: mergedMembers,
+        departments: mergedDepts.length > 0 ? mergedDepts : defaultDepartments,
+        teams: Object.keys(mergedTeams).length > 0 ? mergedTeams : {}
+      };
+      
+      isInitialized = true;
+
+      // 4. Update localStorage with the latest merged state
+      localStorage.setItem(MEMBERS_KEY, JSON.stringify(dbMemoryCache.members));
+      localStorage.setItem(EXAMS_KEY, JSON.stringify(dbMemoryCache.exams));
+      localStorage.setItem(SUBMISSIONS_KEY, JSON.stringify(dbMemoryCache.submissions));
+      localStorage.setItem(DEPARTMENTS_KEY, JSON.stringify(dbMemoryCache.departments));
+      localStorage.setItem(TEAMS_KEY, JSON.stringify(dbMemoryCache.teams));
+      if (dbMemoryCache.sheetsUrl) {
+        localStorage.setItem(SHEETS_URL_KEY, dbMemoryCache.sheetsUrl);
+      }
+
+      // 5. Instantly push backward to ensure absolute persistency across all clients
+      await pushToBackend();
+    }
+  } catch (error) {
+    console.error('Failed to connect to shared database API, fallback to localStorage:', error);
+    isInitialized = true;
   }
 };
 
