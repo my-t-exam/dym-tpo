@@ -194,6 +194,15 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
       return;
     }
     saveSheetsUrl(sheetsUrl);
+    addAuditLog(
+      lang === 'vi' ? 'Cấu hình Google Sheets' : 'Google Sheets設定',
+      currentMember?.name || 'Unknown',
+      currentMember?.email || 'unknown@dymvietnam.net',
+      lang === 'vi' 
+        ? `Đã cập nhật Web App URL kết nối Google Sheets: "${sheetsUrl || 'Đã xóa URL'}"`
+        : `Google Sheets連携のWeb App URLを更新しました: "${sheetsUrl || 'URLの削除'}"`
+    );
+    setAuditLogs(getStoredAuditLogs());
     alert(lang === 'vi' ? 'Đã kích hoạt lưu liên kết kết nối Google Sheet thành công!' : 'GoogleスプレッドシートのWeb App接続が更新されました！');
   };
 
@@ -784,6 +793,16 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
       });
 
       saveMembers(nextM);
+
+      addAuditLog(
+        lang === 'vi' ? 'Cập nhật bộ phận' : 'メンバー部署変更',
+        currentMember?.name || 'Unknown',
+        currentMember?.email || 'unknown@dymvietnam.net',
+        lang === 'vi' 
+          ? `Đã thay đổi bộ phận của nhân viên "${target.name}" (${target.email}) thành "${newDept}"`
+          : `メンバー "${target.name}" (${target.email}) の部署を "${newDept}" に変更しました`
+      );
+      setAuditLogs(getStoredAuditLogs());
 
       if (currentMember.role === 'admin') {
         setMembers(nextM.filter(m => m.department.toLowerCase().trim() === currentMember.department.toLowerCase().trim()));
@@ -1492,6 +1511,15 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                   <button
                     onClick={() => {
                       saveSheetsUrl(sheetsUrl);
+                      addAuditLog(
+                        lang === 'vi' ? 'Cấu hình Google Sheets' : 'Google Sheets設定',
+                        currentMember?.name || 'Unknown',
+                        currentMember?.email || 'unknown@dymvietnam.net',
+                        lang === 'vi' 
+                          ? `Đã cập nhật Web App URL kết nối Google Sheets: "${sheetsUrl || 'Đã xóa URL'}"`
+                          : `Google Sheets連携のWeb App URLを更新しました: "${sheetsUrl || 'URLの削除'}"`
+                      );
+                      setAuditLogs(getStoredAuditLogs());
                       alert(lang === 'vi' ? 'Đã lưu cấu hình Google Sheets của bạn!' : '設定を正常に保存しました！');
                     }}
                     className="px-4 py-2.5 bg-[#5A5A40] text-white hover:bg-[#4D4D36] rounded-xl text-xs font-bold shadow-xs transition duration-150 cursor-pointer whitespace-nowrap"
@@ -2109,6 +2137,17 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                                       return member;
                                     });
                                     saveMembers(updated);
+
+                                    addAuditLog(
+                                      lang === 'vi' ? 'Cập nhật nhóm' : 'メンバーチーム更新',
+                                      currentMember?.name || 'Unknown',
+                                      currentMember?.email || 'unknown@dymvietnam.net',
+                                      lang === 'vi' 
+                                        ? `Đã thay đổi nhóm của nhân viên "${m.name}" (${m.email}) thành "${nextTeam || 'Không có nhóm'}"`
+                                        : `メンバー "${m.name}" (${m.email}) のチームを "${nextTeam || 'チームなし'}" に更新しました`
+                                    );
+                                    setAuditLogs(getStoredAuditLogs());
+
                                     if (onMembersChange) {
                                       onMembersChange(updated);
                                     }

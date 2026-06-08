@@ -12,7 +12,8 @@ import { Exam, Submission, Member, Language } from '../types';
 import { 
   getStoredExams, getStoredSubmissions, saveSubmissions, 
   getStoredSheetsUrl, calculateScore, syncWithGoogleSheets,
-  getStoredMembers, getStoredDepartments, getStoredTeams
+  getStoredMembers, getStoredDepartments, getStoredTeams,
+  addAuditLog
 } from '../lib/database';
 import { translations } from '../data/translations';
 
@@ -316,6 +317,17 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
     const currentSubs = getStoredSubmissions();
     const updatedSubs = [submissionObj, ...currentSubs];
     saveSubmissions(updatedSubs);
+
+    // Add audit log for exam submission
+    addAuditLog(
+      lang === 'vi' ? 'Nộp bài thi' : '試験提出',
+      employeeName.trim(),
+      employeeEmail.trim(),
+      lang === 'vi'
+        ? `Đã nộp bài thi "${selectedExam.title}". Kết quả: ${score}/${maxScore} (${((score / maxScore) * 10).toFixed(1)}/10 điểm)${isAuto ? ' (Do hết thời gian làm bài)' : ''}.`
+        : `試験「${selectedExam.title}」を提出しました。結果: ${score}/${maxScore} (${((score / maxScore) * 10).toFixed(1)}/10 点)${isAuto ? ' (制限時間終了による自動提出)' : ''}。`
+    );
+
     setFinalSubmission(submissionObj);
     
     setScreen('result');
