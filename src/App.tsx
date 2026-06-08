@@ -45,8 +45,23 @@ export default function App() {
       const storedM = getStoredMembers();
       setMembers(storedM);
       
-      // We always default to the login screen upon opening the web app (force login screens as requested)
-      setCurrentMember(null);
+      // Restore logged-in state from localStorage if available
+      const savedMemberId = localStorage.getItem('employee_testing_current_member_id');
+      if (savedMemberId) {
+        const found = storedM.find(m => m.id === savedMemberId);
+        if (found) {
+          setCurrentMember(found);
+          if (found.role === 'superadmin' || found.role === 'admin') {
+            setIsAdminMode(true);
+          } else {
+            setIsAdminMode(false);
+          }
+        } else {
+          setCurrentMember(null);
+        }
+      } else {
+        setCurrentMember(null);
+      }
 
       const storedLang = getStoredLanguage();
       setLang(storedLang);
