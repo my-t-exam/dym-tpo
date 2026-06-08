@@ -204,10 +204,23 @@ async function startServer() {
   });
 
   // API 2: Get whole DB
-  app.get("/api/db", (req, res) => {
+  app.get("/api/db", async (req, res) => {
     res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
     res.setHeader("Pragma", "no-cache");
     res.setHeader("Expires", "0");
+
+    const GAS_URL = process.env.GAS_URL;
+    if (GAS_URL) {
+      try {
+        const response = await fetch(GAS_URL);
+        const data = await response.json();
+        return res.status(200).json(data);
+      } catch (error) {
+        console.error("Error fetching from GAS_URL:", error);
+        return res.status(500).json({ error: String(error) });
+      }
+    }
+
     try {
       if (!fs.existsSync(DB_PATH)) {
         return res.json({
@@ -228,10 +241,31 @@ async function startServer() {
   });
 
   // API 3: Overwrite DB
-  app.post("/api/db", (req, res) => {
+  app.post("/api/db", async (req, res) => {
     res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
     res.setHeader("Pragma", "no-cache");
     res.setHeader("Expires", "0");
+
+    const GAS_URL = process.env.GAS_URL;
+    if (GAS_URL) {
+      try {
+        const response = await fetch(GAS_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(req.body)
+        });
+        if (!response.ok) {
+          throw new Error(`GAS returned status ${response.status}`);
+        }
+        return res.status(200).json({ success: true });
+      } catch (error) {
+        console.error("Error writing to GAS_URL:", error);
+        return res.status(500).json({ error: String(error) });
+      }
+    }
+
     try {
       const newData = req.body;
       if (!newData) {
