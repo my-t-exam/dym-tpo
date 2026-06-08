@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Exam, Submission, Member, Language } from '../types';
+import { Exam, Submission, Member, Language, AuditLog } from '../types';
 import { sampleExams } from '../data/mockData';
 
 const EXAMS_KEY = 'employee_testing_exams';
@@ -11,6 +11,7 @@ const SUBMISSIONS_KEY = 'employee_testing_submissions';
 const SHEETS_URL_KEY = 'employee_testing_sheets_url';
 const MEMBERS_KEY = 'employee_testing_members';
 const LANGUAGE_KEY = 'employee_testing_language';
+const AUDIT_LOGS_KEY = 'employee_testing_audit_logs';
 
 // Centralized dynamic server-synced memory cache
 let dbMemoryCache = {
@@ -19,7 +20,8 @@ let dbMemoryCache = {
   sheetsUrl: '',
   members: [] as Member[],
   departments: [] as string[],
-  teams: {} as Record<string, string[]>
+  teams: {} as Record<string, string[]>,
+  auditLogs: [] as AuditLog[]
 };
 
 let isInitialized = false;
@@ -78,12 +80,14 @@ export const initSharedDatabase = async (forceUpdate: boolean = false): Promise<
           dbMemoryCache.members = data.members;
           dbMemoryCache.departments = Array.isArray(data.departments) ? data.departments : dbMemoryCache.departments;
           dbMemoryCache.teams = (data.teams && typeof data.teams === 'object') ? data.teams : dbMemoryCache.teams;
+          dbMemoryCache.auditLogs = Array.isArray(data.auditLogs) ? data.auditLogs : [];
 
           localStorage.setItem(MEMBERS_KEY, JSON.stringify(dbMemoryCache.members));
           localStorage.setItem(EXAMS_KEY, JSON.stringify(dbMemoryCache.exams));
           localStorage.setItem(SUBMISSIONS_KEY, JSON.stringify(dbMemoryCache.submissions));
           localStorage.setItem(DEPARTMENTS_KEY, JSON.stringify(dbMemoryCache.departments));
           localStorage.setItem(TEAMS_KEY, JSON.stringify(dbMemoryCache.teams));
+          localStorage.setItem(AUDIT_LOGS_KEY, JSON.stringify(dbMemoryCache.auditLogs));
           if (dbMemoryCache.sheetsUrl) {
             localStorage.setItem(SHEETS_URL_KEY, dbMemoryCache.sheetsUrl);
           }
@@ -120,6 +124,13 @@ export const initSharedDatabase = async (forceUpdate: boolean = false): Promise<
       dbMemoryCache.submissions = rawSubs ? JSON.parse(rawSubs) : [];
     } catch {
       dbMemoryCache.submissions = [];
+    }
+
+    try {
+      const rawAudit = localStorage.getItem(AUDIT_LOGS_KEY);
+      dbMemoryCache.auditLogs = rawAudit ? JSON.parse(rawAudit) : [];
+    } catch {
+      dbMemoryCache.auditLogs = [];
     }
 
     try {
@@ -161,6 +172,7 @@ export const initSharedDatabase = async (forceUpdate: boolean = false): Promise<
           dbMemoryCache.members = data.members;
           dbMemoryCache.departments = Array.isArray(data.departments) ? data.departments : dbMemoryCache.departments;
           dbMemoryCache.teams = (data.teams && typeof data.teams === 'object') ? data.teams : dbMemoryCache.teams;
+          dbMemoryCache.auditLogs = Array.isArray(data.auditLogs) ? data.auditLogs : [];
         }
 
         // Ensure LY TIEU MY superadmin is present in the cache
@@ -195,6 +207,7 @@ export const initSharedDatabase = async (forceUpdate: boolean = false): Promise<
         localStorage.setItem(SUBMISSIONS_KEY, JSON.stringify(dbMemoryCache.submissions));
         localStorage.setItem(DEPARTMENTS_KEY, JSON.stringify(dbMemoryCache.departments));
         localStorage.setItem(TEAMS_KEY, JSON.stringify(dbMemoryCache.teams));
+        localStorage.setItem(AUDIT_LOGS_KEY, JSON.stringify(dbMemoryCache.auditLogs));
         if (dbMemoryCache.sheetsUrl) {
           localStorage.setItem(SHEETS_URL_KEY, dbMemoryCache.sheetsUrl);
         }
@@ -472,6 +485,42 @@ export const saveSubmissions = (submissions: Submission[]) => {
   dbMemoryCache.submissions = submissions;
   localStorage.setItem(SUBMISSIONS_KEY, JSON.stringify(submissions));
   pushToBackend();
+};
+
+export const getStoredAuditLogs = (): AuditLog[] => {
+  if (!isInitialized || dbMemoryCache.auditLogs.length === 0) {
+    try {
+      const raw = localStorage.getItem(AUDIT_LOGS_KEY);
+      if (raw) {
+        dbMemoryCache.auditLogs = JSON.parse(raw);
+      } else {
+        dbMemoryCache.auditLogs = [];
+      }
+    } catch {
+      dbMemoryCache.auditLogs = [];
+    }
+  }
+  return dbMemoryCache.auditLogs;
+};
+
+export const saveAuditLogs = (logs: AuditLog[]) => {
+  dbMemoryCache.auditLogs = logs;
+  localStorage.setItem(AUDIT_LOGS_KEY, JSON.stringify(logs));
+  pushToBackend();
+};
+
+export const addAuditLog = (action: string, actorName: string, actorEmail: string, details: string) => {
+  const newLog: AuditLog = {
+    id: `log-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    action,
+    actorName,
+    actorEmail,
+    details,
+    timestamp: new Date().toISOString()
+  };
+  const logs = [newLog, ...getStoredAuditLogs()];
+  const limitedLogs = logs.slice(0, 150);
+  saveAuditLogs(limitedLogs);
 };
 
 export const getStoredSheetsUrl = (): string => {

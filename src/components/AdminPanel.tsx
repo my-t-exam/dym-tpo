@@ -9,12 +9,13 @@ import {
   Trash, ArrowLeft, RefreshCw, Layers, Clock, Calendar, CheckSquare, 
   Eye, Check, AlertTriangle, CloudLightning, ChevronRight, GraduationCap, X, Sparkles, Building2, UserCheck, Search, Database
 } from 'lucide-react';
-import { Exam, Question, Submission, Member, Language } from '../types';
+import { Exam, Question, Submission, Member, Language, AuditLog } from '../types';
 import { 
   getStoredExams, saveExams, getStoredSubmissions, 
   saveSubmissions, getStoredSheetsUrl, saveSheetsUrl, 
   syncWithGoogleSheets, getStoredMembers, saveMembers,
-  getStoredDepartments, saveDepartments, getStoredTeams, saveStoredTeams
+  getStoredDepartments, saveDepartments, getStoredTeams, saveStoredTeams,
+  getStoredAuditLogs, saveAuditLogs, addAuditLog
 } from '../lib/database';
 import GasExport from './GasExport';
 import { translations } from '../data/translations';
@@ -34,13 +35,15 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [sheetsUrl, setSheetsUrl] = useState('');
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [auditSearchQuery, setAuditSearchQuery] = useState('');
   
   // Master departments list (Admin/Super Admin managed)
   const [departmentsList, setDepartmentsList] = useState<string[]>(getStoredDepartments());
   const [newDeptName, setNewDeptName] = useState('');
 
-  // Selection Tabs: exams, submissions, members, dashboard (Requirement 6)
-  const [activeTab, setActiveTab] = useState<'exams' | 'submissions' | 'members' | 'dashboard'>('exams');
+  // Selection Tabs: exams, submissions, members, dashboard, audit
+  const [activeTab, setActiveTab] = useState<'exams' | 'submissions' | 'members' | 'dashboard' | 'audit'>('exams');
   
   // Filtering states
   const [searchQuery, setSearchQuery] = useState('');
@@ -109,6 +112,7 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
     const refreshData = () => {
       setExams(getStoredExams());
       setSheetsUrl(getStoredSheetsUrl());
+      setAuditLogs(getStoredAuditLogs());
       
       const storedM = getStoredMembers();
       const allSubs = getStoredSubmissions();
@@ -343,6 +347,15 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
         const updated = exams.filter((x) => x.id !== id);
         setExams(updated);
         saveExams(updated);
+        addAuditLog(
+          lang === 'vi' ? 'Xóa đề thi' : '試験問題の削除',
+          currentMember?.name || 'Unknown',
+          currentMember?.email || 'unknown@dymvietnam.net',
+          lang === 'vi' 
+            ? `Đã xóa đề thi: "${exam.title}"` 
+            : `試験問題を削除しました: "${exam.title}"`
+        );
+        setAuditLogs(getStoredAuditLogs());
         setCustomModal(null);
       }
     });
@@ -528,8 +541,73 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
 
     setExams(updatedExamsList);
     saveExams(updatedExamsList);
+    addAuditLog(
+      editingExamId === 'new' 
+        ? (lang === 'vi' ? 'Tạo đề thi mới' : '新規試験問題作成')
+        : (lang === 'vi' ? 'Cập nhật đề thi' : '試験問題更新'),
+      currentMember?.name || 'Unknown',
+      currentMember?.email || 'unknown@dymvietnam.net',
+      lang === 'vi' 
+        ? `Đã ${editingExamId === "new" ? "tạo" : "cập nhật"} đề thi: "${updatedExam.title}" (${updatedExam.questions.length} câu hỏi)` 
+        : `試験問題 "${updatedExam.title}" を${editingExamId === "new" ? "作成" : "更新"}しました（${updatedExam.questions.length}問）`
+    );
+    setAuditLogs(getStoredAuditLogs());
     setEditingExamId(null);
     alert(t.saveSuccess);
+  };
+
+  // Function to delete exam submission / result and allow retaking
+  const handleDeleteSubmission = (sub: Submission) => {
+    if (!currentMember || (currentMember.role !== 'superadmin' && currentMember.role !== 'admin')) {
+      setCustomModal({
+        type: 'alert',
+        titleVi: 'Không thể thực hiện',
+        titleJa: '操作を実行できません',
+        messageVi: 'Chỉ có Admin hoặc Super Admin mới thực hiện được hành động này.',
+        messageJa: 'この操作は管理者のみ実行可能です。',
+      });
+      return;
+    }
+
+    setCustomModal({
+      type: 'confirm',
+      titleVi: 'Xác Nhận Xóa Kết Quả Bài Thi',
+      titleJa: '受験結果の削除確認',
+      messageVi: `CẢNH BÁO: Bạn có thực sự muốn xóa kết quả bài thi "${sub.examTitle}" của nhân sự "${sub.employeeName}" (${sub.employeeEmail}) không? Sau khi xóa, nhân sự này sẽ được xóa kết quả thi cũ để làm bài thi mới. Hành động này không thể hoàn tác!`,
+      messageJa: `警告: メンバー "${sub.employeeName}" (${sub.employeeEmail}) の試験 "${sub.examTitle}" の結果を本当に削除しますか？削除すると、この従業員の受験結果はクリアされ、新たに試験を受け直すことができるようになります。この操作は取り消せません！`,
+      onConfirm: () => {
+        const allSubs = getStoredSubmissions();
+        const nextSubs = allSubs.filter(s => s.id !== sub.id);
+        saveSubmissions(nextSubs);
+
+        // Update local React state
+        if (currentMember.role === 'admin') {
+          const userDept = currentMember.department;
+          const storedM = getStoredMembers();
+          const deptSubs = nextSubs.filter((s) => {
+            const matchM = storedM.find(m => m.email.toLowerCase().trim() === s.employeeEmail?.toLowerCase().trim());
+            const candidateDept = matchM?.department || s.employeeDepartment;
+            return candidateDept === userDept;
+          });
+          setSubmissions(deptSubs);
+        } else {
+          setSubmissions(nextSubs);
+        }
+
+        // Add to audit logs
+        addAuditLog(
+          lang === 'vi' ? 'Xóa kết quả thi' : '受験結果 of 削除',
+          currentMember.name,
+          currentMember.email,
+          lang === 'vi'
+            ? `Đã xóa kết quả bài thi "${sub.examTitle}" của nhân sự "${sub.employeeName}" (${sub.employeeEmail}) để cho phép thi lại.`
+            : `メンバー "${sub.employeeName}" (${sub.employeeEmail}) の試験 "${sub.examTitle}" の結果を削除しました（再受験可能に設定）。`
+        );
+        
+        setAuditLogs(getStoredAuditLogs());
+        setCustomModal(null);
+      }
+    });
   };
 
   // --- MEMBERS DIRECTORY CODE SECTION ---
@@ -572,6 +650,16 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
 
     const nextM = [...storedM, added];
     saveMembers(nextM);
+    
+    addAuditLog(
+      lang === 'vi' ? 'Thêm nhân viên' : 'メンバー登録',
+      currentMember?.name || 'Unknown',
+      currentMember?.email || 'unknown@dymvietnam.net',
+      lang === 'vi' 
+        ? `Đã thêm nhân viên mới: "${added.name}" (${added.email}) tại bộ phận ${added.department}${added.team ? ` - nhóm ${added.team}` : ''}`
+        : `新規メンバー "${added.name}" (${added.email}) を "${added.department}" 部署${added.team ? ` - "${added.team}" チーム` : ''}に登録しました`
+    );
+    setAuditLogs(getStoredAuditLogs());
     
     if (currentMember.role === 'admin') {
       setMembers(nextM.filter(m => m.department.toLowerCase().trim() === currentMember.department.toLowerCase().trim()));
@@ -632,6 +720,15 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
 
       setMembers(nextM);
       saveMembers(nextM);
+      addAuditLog(
+        lang === 'vi' ? 'Thay đổi phân quyền' : 'メンバー権限変更',
+        currentMember?.name || 'Unknown',
+        currentMember?.email || 'unknown@dymvietnam.net',
+        lang === 'vi' 
+          ? `Đã thay đổi phân quyền của nhân viên "${target.name}" (${target.email}) từ ${target.role.toUpperCase()} thành ${newRole.toUpperCase()}`
+          : `メンバー "${target.name}" (${target.email}) の権限を ${target.role.toUpperCase()} から ${newRole.toUpperCase()} に変更しました`
+      );
+      setAuditLogs(getStoredAuditLogs());
       if (onMembersChange) {
         onMembersChange(nextM);
       }
@@ -774,6 +871,15 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
       onConfirm: () => {
         const nextM = storedM.filter(m => m.id !== memberId);
         saveMembers(nextM);
+        addAuditLog(
+          lang === 'vi' ? 'Xóa nhân viên' : 'メンバー削除',
+          currentMember?.name || 'Unknown',
+          currentMember?.email || 'unknown@dymvietnam.net',
+          lang === 'vi' 
+            ? `Đã xóa nhân viên: "${target.name}" (${target.email})`
+            : `メンバー "${target.name}" (${target.email}) を削除しました`
+        );
+        setAuditLogs(getStoredAuditLogs());
         
         if (currentMember.role === 'admin') {
           setMembers(nextM.filter(m => m.department.toLowerCase().trim() === currentMember.department.toLowerCase().trim()));
@@ -931,6 +1037,13 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                 {t.tabMembers} ({members.length})
               </button>
             )}
+            <button
+              onClick={() => setActiveTab('audit')}
+              className={`px-5 py-3 text-xs font-bold border-b-2 transition ${activeTab === 'audit' ? 'border-[#5A5A40] text-[#5A5A40]' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
+              id="tab-audit-logs"
+            >
+              📋 {lang === 'vi' ? 'Lịch sử hệ thống' : 'システム活動ログ'}
+            </button>
           </div>
 
           {/* TAB CONTENT: EXAMS MANAGER */}
@@ -1337,6 +1450,14 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                                   <CloudLightning className="w-3.5 h-3.5 shrink-0" />
                                   {syncingId === sub.id ? '...' : (lang === 'vi' ? 'Sheet' : '同期')}
                                 </button>
+                                <button
+                                  onClick={() => handleDeleteSubmission(sub)}
+                                  className="px-2 py-1 bg-[#FFF1F2] border border-[#FECDD3] text-[#E11D48] hover:bg-[#FFE4E6] rounded text-[#E11D48] text-xs font-bold transition cursor-pointer flex items-center gap-0.5"
+                                  title={lang === 'vi' ? 'Xóa kết quả bài thi này để cho phép làm lại' : '再受験させるためにこの受験結果を削除します'}
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                  {lang === 'vi' ? 'Xóa' : '削除'}
+                                </button>
                               </div>
                             </td>
                           </tr>
@@ -1422,6 +1543,15 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                             const updated = [...departmentsList, term];
                             setDepartmentsList(updated);
                             saveDepartments(updated);
+                            addAuditLog(
+                              lang === 'vi' ? 'Thêm bộ phận' : '部署追加',
+                              currentMember?.name || 'Unknown',
+                              currentMember?.email || 'unknown@dymvietnam.net',
+                              lang === 'vi' 
+                                ? `Đã thêm bộ phận nghiệp vụ mới: "${term}"`
+                                : `新規部署 "${term}" を追加しました`
+                            );
+                            setAuditLogs(getStoredAuditLogs());
                             setNewDeptName('');
                             setNewMemberDept(term);
                           }}
@@ -1453,6 +1583,15 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                                     const updated = departmentsList.filter(d => d !== dept);
                                     setDepartmentsList(updated);
                                     saveDepartments(updated);
+                                    addAuditLog(
+                                      lang === 'vi' ? 'Xóa bộ phận' : '部署削除',
+                                      currentMember?.name || 'Unknown',
+                                      currentMember?.email || 'unknown@dymvietnam.net',
+                                      lang === 'vi' 
+                                        ? `Đã xóa bộ phận: "${dept}"`
+                                        : `部署 "${dept}" を削除しました`
+                                    );
+                                    setAuditLogs(getStoredAuditLogs());
                                     setCustomModal(null);
                                   }
                                 });
@@ -1552,6 +1691,15 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                           currentTeams[dept] = nextList;
                           setDeptTeams(currentTeams);
                           saveStoredTeams(currentTeams);
+                          addAuditLog(
+                            lang === 'vi' ? 'Thêm team bộ phận' : '部門チーム追加',
+                            currentMember?.name || 'Unknown',
+                            currentMember?.email || 'unknown@dymvietnam.net',
+                            lang === 'vi' 
+                              ? `Đã thêm nhóm mới: "${cleanTeam}" trực thuộc bộ phận "${dept}"`
+                              : `"${dept}" 部署配下に新規チーム "${cleanTeam}" を追加しました`
+                          );
+                          setAuditLogs(getStoredAuditLogs());
                           setNewTeamName('');
                           alert(lang === 'vi' ? `Đã thêm team "${cleanTeam}" thành công!` : `チーム "${cleanTeam}" が追加されました。`);
                         }}
@@ -2018,6 +2166,113 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
             <div className="space-y-6" id="sheets-tab-content">
               {/* DETAILED CSV EXPORTER MODULE */}
               <GasExport submissions={submissions} lang={lang} />
+            </div>
+          )}
+
+          {/* TAB CONTENT: AUDIT LOGS */}
+          {activeTab === 'audit' && (
+            <div className="space-y-4" id="audit-logs-tab-content">
+              {/* Filter controls */}
+              <div className="bg-white border border-slate-200 p-4 rounded-xl shadow-xs flex flex-col sm:flex-row gap-3 items-end">
+                <div className="grow w-full">
+                  <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1">
+                    {lang === 'vi' ? 'Tìm kiếm lịch sử chỉnh sửa' : '操作履歴を検索'}
+                  </label>
+                  <input
+                    type="text"
+                    placeholder={lang === 'vi' ? 'Tìm theo tên, email hoặc nội dung chỉnh sửa...' : '操作者、メールアドレス、内容で検索...'}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg py-1.5 px-3 text-xs outline-none focus:border-[#5A5A40] font-medium"
+                    value={auditSearchQuery}
+                    onChange={(e) => setAuditSearchQuery(e.target.value)}
+                  />
+                </div>
+                {currentMember?.role === 'superadmin' && (
+                  <button
+                    onClick={() => {
+                      setCustomModal({
+                        type: 'confirm',
+                        titleVi: 'Xóa toàn bộ lịch sử hệ thống',
+                        titleJa: '全操作履歴の初期化確認',
+                        messageVi: 'Bạn có thực sự chắc chắn muốn xóa TOÀN BỘ lịch sử hoạt động hệ thống không? Hành động này sẽ dọn sạch tất cả dữ liệu audit log và không thể hoàn tác.',
+                        messageJa: 'すべての操作履歴を消去しますか？この操作を実行すると元に戻すことはできません。',
+                        onConfirm: () => {
+                          saveAuditLogs([]);
+                          setAuditLogs([]);
+                          setCustomModal(null);
+                        }
+                      });
+                    }}
+                    className="px-3 py-1.5 bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-150 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    {lang === 'vi' ? 'Xóa lịch sử' : '履歴消去'}
+                  </button>
+                )}
+              </div>
+
+              {/* Table Container */}
+              <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-x-auto p-4">
+                {(() => {
+                  const filtered = auditLogs.filter(log => {
+                    if (!auditSearchQuery) return true;
+                    const query = auditSearchQuery.toLowerCase().trim();
+                    return (
+                      log.actorName.toLowerCase().includes(query) ||
+                      log.actorEmail.toLowerCase().includes(query) ||
+                      log.action.toLowerCase().includes(query) ||
+                      log.details.toLowerCase().includes(query)
+                    );
+                  });
+
+                  if (filtered.length === 0) {
+                    return (
+                      <div className="text-center py-12 text-slate-400 text-xs font-medium">
+                        {lang === 'vi' ? 'Không có hoạt động nào được ghi lại' : '操作履歴が見つかりません。'}
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <table className="w-full text-left border-collapse text-xs">
+                      <thead>
+                        <tr className="border-b border-slate-200 text-slate-400 uppercase font-bold tracking-wider">
+                          <th className="py-3 px-2 w-[180px]">{lang === 'vi' ? 'Thời gian' : '操作日時'}</th>
+                          <th className="py-3 px-2 w-[180px]">{lang === 'vi' ? 'Người thực hiện' : '操作者'}</th>
+                          <th className="py-3 px-2 w-[150px]">{lang === 'vi' ? 'Hành động' : '操作種類'}</th>
+                          <th className="py-3 px-2 text-left">{lang === 'vi' ? 'Chi tiết chỉnh sửa' : '詳細内容'}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filtered.map((log) => (
+                          <tr key={log.id} className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50/50 transition font-medium">
+                            <td className="py-3 px-2 font-mono text-[11px] text-slate-500">
+                              {formatDateTimeVietnamese(log.timestamp)}
+                            </td>
+                            <td className="py-3 px-2">
+                              <span className="font-extrabold text-slate-900 block">{log.actorName}</span>
+                              <span className="text-[10px] text-slate-400 font-mono">{log.actorEmail}</span>
+                            </td>
+                            <td className="py-3 px-2">
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold block w-max uppercase tracking-wider ${
+                                log.action.includes('Xóa') || log.action.includes('削除') 
+                                  ? 'bg-rose-50 border border-rose-200 text-rose-700' 
+                                  : log.action.includes('Tạo') || log.action.includes('新規') || log.action.includes('Thêm')
+                                    ? 'bg-emerald-50 border border-emerald-200 text-emerald-700'
+                                    : 'bg-blue-50 border border-blue-200 text-blue-700'
+                              }`}>
+                                {log.action}
+                              </span>
+                            </td>
+                            <td className="py-3 px-2 text-slate-700 font-medium whitespace-pre-wrap leading-relaxed">
+                              {log.details}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  );
+                })()}
+              </div>
             </div>
           )}
 

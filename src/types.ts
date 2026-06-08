@@ -54,6 +54,15 @@ export interface Member {
   password?: string; // Password is required for superadmin/admin accounts
 }
 
+export interface AuditLog {
+  id: string;
+  action: string;      // Action/Event label
+  actorName: string;   // Who performed the action
+  actorEmail: string;  // Their email
+  details: string;     // Log description
+  timestamp: string;   // ISO timestamp
+}
+
 export type Language = 'vi' | 'ja';
 
 export interface AppSettings {
