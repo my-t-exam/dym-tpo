@@ -23,8 +23,11 @@ let dbMemoryCache = {
 };
 
 let isInitialized = false;
+let lastPushTime = 0;
 
 const pushToBackend = async () => {
+  lastPushTime = Date.now();
+  
   if (!isInitialized) {
     console.warn('Skipping sync: database is not initialized yet.');
     return;
@@ -59,25 +62,31 @@ let isInitializingPromise: Promise<void> | null = null;
 
 export const initSharedDatabase = async (): Promise<void> => {
   if (isInitialized) {
+    if (Date.now() - lastPushTime < 4000) {
+      // Race protection: Skip background pull immediately after a local manual save
+      return;
+    }
     // If already fully initialized, fetch newer updates from server directly as part of a background sync
     try {
       const res = await fetch(`/api/db?t=${Date.now()}`, { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
-        dbMemoryCache.exams = (data.exams && data.exams.length > 0) ? data.exams : dbMemoryCache.exams;
-        dbMemoryCache.submissions = (data.submissions && data.submissions.length > 0) ? data.submissions : dbMemoryCache.submissions;
-        dbMemoryCache.sheetsUrl = data.sheetsUrl || dbMemoryCache.sheetsUrl;
-        dbMemoryCache.members = (data.members && data.members.length > 0) ? data.members : dbMemoryCache.members;
-        dbMemoryCache.departments = (data.departments && data.departments.length > 0) ? data.departments : dbMemoryCache.departments;
-        dbMemoryCache.teams = (data.teams && Object.keys(data.teams).length > 0) ? data.teams : dbMemoryCache.teams;
+        if (data && Array.isArray(data.exams) && Array.isArray(data.members)) {
+          dbMemoryCache.exams = data.exams;
+          dbMemoryCache.submissions = Array.isArray(data.submissions) ? data.submissions : [];
+          dbMemoryCache.sheetsUrl = data.sheetsUrl || '';
+          dbMemoryCache.members = data.members;
+          dbMemoryCache.departments = Array.isArray(data.departments) ? data.departments : dbMemoryCache.departments;
+          dbMemoryCache.teams = (data.teams && typeof data.teams === 'object') ? data.teams : dbMemoryCache.teams;
 
-        localStorage.setItem(MEMBERS_KEY, JSON.stringify(dbMemoryCache.members));
-        localStorage.setItem(EXAMS_KEY, JSON.stringify(dbMemoryCache.exams));
-        localStorage.setItem(SUBMISSIONS_KEY, JSON.stringify(dbMemoryCache.submissions));
-        localStorage.setItem(DEPARTMENTS_KEY, JSON.stringify(dbMemoryCache.departments));
-        localStorage.setItem(TEAMS_KEY, JSON.stringify(dbMemoryCache.teams));
-        if (dbMemoryCache.sheetsUrl) {
-          localStorage.setItem(SHEETS_URL_KEY, dbMemoryCache.sheetsUrl);
+          localStorage.setItem(MEMBERS_KEY, JSON.stringify(dbMemoryCache.members));
+          localStorage.setItem(EXAMS_KEY, JSON.stringify(dbMemoryCache.exams));
+          localStorage.setItem(SUBMISSIONS_KEY, JSON.stringify(dbMemoryCache.submissions));
+          localStorage.setItem(DEPARTMENTS_KEY, JSON.stringify(dbMemoryCache.departments));
+          localStorage.setItem(TEAMS_KEY, JSON.stringify(dbMemoryCache.teams));
+          if (dbMemoryCache.sheetsUrl) {
+            localStorage.setItem(SHEETS_URL_KEY, dbMemoryCache.sheetsUrl);
+          }
         }
       }
     } catch (e) {
@@ -145,13 +154,14 @@ export const initSharedDatabase = async (): Promise<void> => {
       if (res.ok) {
         const data = await res.json();
         
-        // Update memory cache with server data, retaining local data if server returns empty/missing fields
-        dbMemoryCache.exams = (data.exams && data.exams.length > 0) ? data.exams : dbMemoryCache.exams;
-        dbMemoryCache.submissions = (data.submissions && data.submissions.length > 0) ? data.submissions : dbMemoryCache.submissions;
-        dbMemoryCache.sheetsUrl = data.sheetsUrl || dbMemoryCache.sheetsUrl;
-        dbMemoryCache.members = (data.members && data.members.length > 0) ? data.members : dbMemoryCache.members;
-        dbMemoryCache.departments = (data.departments && data.departments.length > 0) ? data.departments : dbMemoryCache.departments;
-        dbMemoryCache.teams = (data.teams && Object.keys(data.teams).length > 0) ? data.teams : dbMemoryCache.teams;
+        if (data && Array.isArray(data.exams) && Array.isArray(data.members)) {
+          dbMemoryCache.exams = data.exams;
+          dbMemoryCache.submissions = Array.isArray(data.submissions) ? data.submissions : [];
+          dbMemoryCache.sheetsUrl = data.sheetsUrl || '';
+          dbMemoryCache.members = data.members;
+          dbMemoryCache.departments = Array.isArray(data.departments) ? data.departments : dbMemoryCache.departments;
+          dbMemoryCache.teams = (data.teams && typeof data.teams === 'object') ? data.teams : dbMemoryCache.teams;
+        }
 
         // Ensure LY TIEU MY superadmin is present in the cache
         let updatedMembers = false;
