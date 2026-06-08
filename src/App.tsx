@@ -276,8 +276,8 @@ export default function App() {
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
           
           <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-[#5A5A40] rounded-xl text-white">
-              <GraduationCap className="w-5.5 h-5.5" />
+            <div className="w-9.5 h-9.5 bg-[#5A5A40] rounded-xl text-white flex items-center justify-center font-serif font-black text-lg select-none shadow-xs">
+              D
             </div>
             <div>
               <span className="text-[10px] text-[#5A5A40]/70 font-bold block uppercase tracking-wider leading-none">
