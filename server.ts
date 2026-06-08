@@ -1,7 +1,10 @@
+import dotenv from "dotenv";
 import express from "express";
 import path from "path";
 import fs from "fs";
 import { createServer as createViteServer } from "vite";
+
+dotenv.config();
 
 const DB_PATH = path.join(process.cwd(), "db.json");
 
