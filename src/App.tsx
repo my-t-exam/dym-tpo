@@ -128,7 +128,7 @@ export default function App() {
     }
   };
 
-  const handleGoogleSuccess = (credentialResponse: any) => {
+  const handleGoogleSuccess = async (credentialResponse: any) => {
     if (!credentialResponse?.credential) {
       setLoginError(lang === 'vi' ? 'Đăng nhập Google thất bại!' : 'Googleログインに失敗しました。');
       return;
@@ -140,6 +140,9 @@ export default function App() {
         setLoginError(lang === 'vi' ? 'Không tìm thấy email từ tài khoản Google!' : 'Googleアカウントからメールアドレスを取得できませんでした。');
         return;
       }
+
+      // Forcibly pull the latest members from the shared database endpoint (fixes newly-added employee log-in issue)
+      await initSharedDatabase(true);
 
       // Load fresh members list to check active accounts
       const storedM = getStoredMembers();
@@ -297,23 +300,7 @@ export default function App() {
               </button>
             </div>
 
-            {/* Change Password option for administrative accounts */}
-            {currentMember && (currentMember.role === 'admin' || currentMember.role === 'superadmin') && (
-              <button
-                onClick={() => {
-                  setOldPassword('');
-                  setNewPassword('');
-                  setConfirmNewPassword('');
-                  setChangePasswordError('');
-                  setShowChangePasswordModal(true);
-                }}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 rounded-lg text-xs font-bold transition cursor-pointer"
-                title={lang === 'vi' ? 'Đổi mật khẩu' : 'パスワード変更'}
-              >
-                <Key className="w-3.5 h-3.5" />
-                <span className="hidden md:inline">{lang === 'vi' ? 'Đổi mật khẩu' : 'パスワード変更'}</span>
-              </button>
-            )}
+
 
             {/* Display Portal toggle ONLY if current user is an Admin or Super Admin */}
             {currentMember && currentMember.role !== 'member' ? (
@@ -381,34 +368,10 @@ export default function App() {
                 </p>
               </div>
 
-              {/* Secure login tabs selector */}
-              <div className="grid grid-cols-2 p-1 bg-slate-100 rounded-xl">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setLoginTab('member');
-                    setLoginError('');
-                  }}
-                  className={`py-2 text-xs font-extrabold rounded-lg transition-all cursor-pointer ${loginTab === 'member' ? 'bg-white text-[#5A5A40] shadow-xs' : 'text-slate-500 hover:text-slate-700'}`}
-                >
-                  👥 {lang === 'vi' ? 'Nhân viên' : '一般従業員'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setLoginTab('admin');
-                    setLoginError('');
-                  }}
-                  className={`py-2 text-xs font-extrabold rounded-lg transition-all cursor-pointer ${loginTab === 'admin' ? 'bg-white text-[#5A5A40] shadow-xs' : 'text-slate-500 hover:text-slate-700'}`}
-                >
-                  🛡️ {lang === 'vi' ? 'Quản trị viên' : '管理者ログイン'}
-                </button>
-              </div>
-
-              {/* Google Sign-In Options */}
-              <div className="flex flex-col items-center justify-center pt-2 pb-2 space-y-4">
+              {/* Google Sign-In Button/Options only */}
+              <div className="flex flex-col items-center justify-center pt-4 pb-2 space-y-4">
                 {!hasGoogleClientId ? (
-                  <div className="w-full bg-amber-50 border border-amber-200 rounded-xl p-3.5 text-xs text-amber-900 leading-relaxed space-y-3 shadow-xs">
+                  <div className="w-full bg-amber-50 border border-amber-200 rounded-xl p-3.5 text-xs text-amber-900 leading-relaxed space-y-3 shadow-xs animate-in fade-in duration-200">
                     <div className="font-bold flex items-center gap-1.5 text-amber-900">
                       ⚠️ {lang === 'vi' ? 'Google Sign-In chưa được thiết lập!' : 'Googleログインが設定されていません'}
                     </div>
@@ -448,7 +411,7 @@ export default function App() {
                     </div>
                   </div>
                 ) : (
-                  <div className="w-full flex justify-center">
+                  <div className="w-full flex justify-center py-4">
                     <GoogleLogin
                       onSuccess={handleGoogleSuccess}
                       onError={() => {
@@ -461,83 +424,33 @@ export default function App() {
                     />
                   </div>
                 )}
-                
-                <div className="relative flex py-1 items-center w-full">
-                  <div className="flex-grow border-t border-[#E5E2D9]"></div>
-                  <span className="flex-shrink mx-4 text-slate-400 text-[10px] font-bold uppercase tracking-widest">
-                    {lang === 'vi' ? 'Hoặc nhập thủ công' : 'または手動入力'}
-                  </span>
-                  <div className="flex-grow border-t border-[#E5E2D9]"></div>
-                </div>
               </div>
 
               {loginError && (
-                <div className="bg-rose-50 border border-rose-100 p-3.5 rounded-lg text-xs leading-relaxed">
+                <div className="bg-rose-50 border border-rose-100 p-3.5 rounded-lg text-xs leading-relaxed animate-in shake duration-150">
                   <div className="font-bold text-rose-600">{loginError}</div>
                 </div>
               )}
-
-              <form onSubmit={handleEmailLogin} className="space-y-4">
-                <div>
-                  <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1">
-                    {lang === 'vi' ? 'Email Công ty' : '会社用メールアドレス'}
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    placeholder={loginTab === 'member' ? 'lan.nt@dymvietnam.net' : 'my-t@dymvietnam.net'}
-                    className="w-full bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-lg p-3 text-xs outline-none focus:border-[#5A5A40] font-bold tracking-wide transition shadow-xs"
-                    value={loginEmail}
-                    onChange={(e) => {
-                      setLoginEmail(e.target.value);
-                      setLoginError('');
-                    }}
-                  />
-                </div>
-
-                {loginTab === 'admin' && (
-                  <div className="animate-in fade-in duration-150">
-                    <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1">
-                      {lang === 'vi' ? 'Mật khẩu quản trị' : '管理パスワード'}
-                    </label>
-                    <input
-                      type="password"
-                      required
-                      placeholder={lang === 'vi' ? 'Nhập mật khẩu' : 'パスワードを入力してください'}
-                      className="w-full bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-lg p-3 text-xs outline-none focus:border-[#5A5A40] font-bold tracking-wide transition shadow-xs"
-                      value={loginPassword}
-                      onChange={(e) => {
-                        setLoginPassword(e.target.value);
-                        setLoginError('');
-                      }}
-                    />
-                  </div>
-                )}
-
-                <button
-                  type="submit"
-                  className="w-full py-3 bg-[#5A5A40] hover:bg-[#4D4D36] text-white rounded-lg font-bold text-xs transition shadow-md hover:shadow-lg cursor-pointer flex items-center justify-center gap-1.5 active:scale-[0.98]"
-                >
-                  {lang === 'vi' ? 'Xác nhận vào hệ thống' : 'システムにサインイン'}
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-
-              </form>
 
               <div className="bg-[#5A5A40]/5 border border-[#5A5A40]/10 rounded-xl p-4 text-[11px] text-[#5A5A40] space-y-1.5 leading-relaxed font-medium">
                 <span className="font-bold flex items-center gap-1 text-[#5A5A40]">
                   <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#D4A373]"></span>
                   {lang === 'vi' ? 'HƯỚNG DẪN TRUY CẬP:' : 'ログインのガイダンス:'}
                 </span>
-                <p className="opacity-90">
+                <p className="opacity-95 text-[11px] leading-relaxed">
                   {lang === 'vi' 
-                    ? '1. Nếu là Nhân viên: Chỉ cần nhập địa chỉ Email đã được Admin/Super Admin thêm vào hệ thống để bắt đầu làm bài trực tiếp (Không cần mật khẩu).'
-                    : '1. 一般社員の方：管理者に登録された会社メールアドレスを入力するだけで受検可能です（パスワードは不要です）。'}
+                    ? '1. Hệ thống chỉ hỗ trợ đăng nhập duy nhất bằng tài khoản Google của công ty DYM.'
+                    : '1. 当システムは、DYM社指定のGoogleアカウントでのみログインが可能です。'}
                 </p>
-                <p className="opacity-90">
+                <p className="opacity-95 text-[11px] leading-relaxed">
                   {lang === 'vi' 
-                    ? '2. Nếu là Quản trị viên (Super Admin / Admin): Chuyển sang tab "Quản trị viên", nhập Email và Mật khẩu của bạn để quản lý đề thi và xem kết quả. Mật khẩu khởi tạo mặc định cho các tài khoản mẫu ban đầu là: "dym123".'
-                    : '2. 管理者・最高管理者の方：管理者タブを選択し、メールアドレスとパスワードを入力してください。初期代表アカウントの規定パスワードは「dym123」に設定されています。'}
+                    ? '2. Chỉ những email đã được Ban quản trị hoặc Admin thêm trước vào danh sách nhân sự mới có quyền truy cập.'
+                    : '2. 事前に管理者によって人事リストに登録されているメールアドレスのみアクセス可能です。'}
+                </p>
+                <p className="opacity-95 text-[11px] leading-relaxed">
+                  {lang === 'vi' 
+                    ? '3. Hệ thống sẽ tự động chuyển hướng các tài khoản quản trị (Admin/Super Admin) sang chế độ quản lý đề thi tương xứng.'
+                    : '3. 管理者アカウント（AdminおよびSuper Admin）でログインすると、自動的に試験管理画面へ遷移します。'}
                 </p>
               </div>
             </div>

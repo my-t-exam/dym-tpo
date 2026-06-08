@@ -559,15 +559,6 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
     const resolvedRole = currentMember.role === 'admin' ? 'member' : newMemberRole;
     const resolvedDept = currentMember.role === 'admin' ? currentMember.department : newMemberDept;
 
-    // Password requirement check for Admin and Super Admin
-    if ((resolvedRole === 'admin' || resolvedRole === 'superadmin') && !newMemberPassword.trim()) {
-      alert(lang === 'vi' 
-        ? 'Vui lòng cung cấp mật khẩu cho tài khoản Quản trị viên mới!' 
-        : '新しい管理者アカウントのパスワードを入力してください。'
-      );
-      return;
-    }
-
     const added: Member = {
       id: `m-${Date.now()}`,
       name: newMemberName.trim(),
@@ -575,7 +566,6 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
       role: resolvedRole,
       department: resolvedDept,
       team: newMemberTeam || undefined,
-      password: (resolvedRole === 'admin' || resolvedRole === 'superadmin') ? newMemberPassword.trim() : undefined,
       createdAt: new Date().toISOString(),
       createdBy: currentMember.email.toLowerCase().trim()
     };
@@ -2885,7 +2875,7 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
               <PlusCircle className="w-5 h-5 text-[#5A5A40]" />
               <div>
                 <h3 className="font-bold text-slate-800 text-sm font-serif">
-                  {lang === 'vi' ? 'Đăng Ký Nhân Sự Mới' : '新規社員の登録'}
+                  {lang === 'vi' ? 'Đăng Ký Nhân Sự Mới' : '新規社員의 登録'}
                 </h3>
                 <p className="text-[10px] text-slate-400">
                   {lang === 'vi' ? 'Đăng ký tài khoản nhân viên mới vào hệ thống.' : '社内システムに新しいメンバー情報を追加・発行します。'}
@@ -2982,7 +2972,6 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                     onChange={(e) => {
                       const r = e.target.value as 'superadmin' | 'admin' | 'member';
                       setNewMemberRole(r);
-                      if (r === 'member') setNewMemberPassword('');
                     }}
                   >
                     <option value="member">{lang === 'vi' ? 'Member (Thành viên - Chỉ thi & khảo sát)' : '一般メンバー'}</option>
@@ -2991,23 +2980,6 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                   </select>
                 )}
               </div>
-
-              {/* Password field - Only shown if selected role is admin or superadmin */}
-              {currentMember?.role !== 'admin' && (newMemberRole === 'admin' || newMemberRole === 'superadmin') && (
-                <div className="animate-in fade-in slide-in-from-top-1 duration-155">
-                  <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">
-                    {lang === 'vi' ? 'Mật khẩu khởi tạo' : '初期パスワード'} <span className="text-rose-500 font-bold">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder={lang === 'vi' ? 'Nhập mật khẩu (VD: dym123)' : 'パスワードを入力してください (例: dym123)'}
-                    className="w-full bg-slate-50 border border-slate-200 hover:border-slate-300 focus:bg-white rounded-xl p-2.5 text-xs outline-none focus:border-[#5A5A40] text-slate-800 transition font-bold"
-                    value={newMemberPassword}
-                    onChange={(e) => setNewMemberPassword(e.target.value)}
-                  />
-                </div>
-              )}
             </div>
 
             <div className="pt-4 border-t border-slate-100 flex justify-end gap-2.5 text-xs">

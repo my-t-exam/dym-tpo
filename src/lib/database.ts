@@ -60,8 +60,8 @@ const pushToBackend = async () => {
 
 let isInitializingPromise: Promise<void> | null = null;
 
-export const initSharedDatabase = async (): Promise<void> => {
-  if (isInitialized) {
+export const initSharedDatabase = async (forceUpdate: boolean = false): Promise<void> => {
+  if (isInitialized && !forceUpdate) {
     if (Date.now() - lastPushTime < 4000) {
       // Race protection: Skip background pull immediately after a local manual save
       return;
