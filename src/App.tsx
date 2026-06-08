@@ -40,18 +40,8 @@ export default function App() {
       const storedM = getStoredMembers();
       setMembers(storedM);
       
-      // Check if there is already an active session from local storage
-      const activeMemberId = localStorage.getItem('employee_testing_current_member_id');
-      if (activeMemberId) {
-        const found = storedM.find(m => m.id === activeMemberId);
-        if (found) {
-          setCurrentMember(found);
-        } else {
-          setCurrentMember(null);
-        }
-      } else {
-        setCurrentMember(null);
-      }
+      // We always default to the login screen upon opening the web app (force login screens as requested)
+      setCurrentMember(null);
 
       const storedLang = getStoredLanguage();
       setLang(storedLang);
