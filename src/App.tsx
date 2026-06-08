@@ -5,6 +5,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { Shield, Sparkles, User, GraduationCap, Building2, Languages, HelpCircle, ChevronRight, Layers, Users, LogOut, Key, X } from 'lucide-react';
+import { GoogleLogin } from '@react-oauth/google';
+import { jwtDecode } from 'jwt-decode';
 import ExamPortal from './components/ExamPortal';
 import AdminPanel from './components/AdminPanel';
 import { Member, Language } from './types';
@@ -120,6 +122,51 @@ export default function App() {
       setLoginPassword('');
       setLoginError('');
       setIsAdminMode(true); // default to management view for administrative accounts
+    }
+  };
+
+  const handleGoogleSuccess = (credentialResponse: any) => {
+    if (!credentialResponse?.credential) {
+      setLoginError(lang === 'vi' ? 'Đăng nhập Google thất bại!' : 'Googleログインに失敗しました。');
+      return;
+    }
+    try {
+      const decoded: any = jwtDecode(credentialResponse.credential);
+      const email = decoded.email?.toLowerCase().trim();
+      if (!email) {
+        setLoginError(lang === 'vi' ? 'Không tìm thấy email từ tài khoản Google!' : 'Googleアカウントからメールアドレスを取得できませんでした。');
+        return;
+      }
+
+      // Load fresh members list to check active accounts
+      const storedM = getStoredMembers();
+      const matched = storedM.find(m => m.email.toLowerCase().trim() === email);
+
+      if (!matched) {
+        setLoginError(lang === 'vi'
+          ? `Tài khoản Google (${email}) chưa được đăng kí trong hệ thống. Vui lòng liên hệ ban nhân sự hoặc bộ phận Admin!`
+          : `このGoogleアカウント（${email}）は登録されていません。管理者にメールアドレスの登録をご依頼ください。`
+        );
+        return;
+      }
+
+      // Successful login
+      setCurrentMember(matched);
+      localStorage.setItem('employee_testing_current_member_id', matched.id);
+      
+      // Auto-set admin mode for admin/superadmin accounts
+      if (matched.role === 'superadmin' || matched.role === 'admin') {
+        setIsAdminMode(true);
+      } else {
+        setIsAdminMode(false);
+      }
+
+      setLoginError('');
+      setLoginEmail('');
+      setLoginPassword('');
+    } catch (err) {
+      console.error('JWT decode error:', err);
+      setLoginError(lang === 'vi' ? 'Lỗi giải mã thông tin tài khoản Google!' : 'Googleアカウント情報のデコード中にエラーが発生しました。');
     }
   };
 
@@ -353,6 +400,30 @@ export default function App() {
                 >
                   🛡️ {lang === 'vi' ? 'Quản trị viên' : '管理者ログイン'}
                 </button>
+              </div>
+
+              {/* Google Sign-In Options */}
+              <div className="flex flex-col items-center justify-center pt-2 pb-2 space-y-4">
+                <div className="w-full flex justify-center">
+                  <GoogleLogin
+                    onSuccess={handleGoogleSuccess}
+                    onError={() => {
+                      setLoginError(lang === 'vi' ? 'Đăng nhập Google thất bại!' : 'Googleログインに失敗しました。');
+                    }}
+                    theme="filled_blue"
+                    size="large"
+                    shape="pill"
+                    text="continue_with"
+                  />
+                </div>
+                
+                <div className="relative flex py-1 items-center w-full">
+                  <div className="flex-grow border-t border-[#E5E2D9]"></div>
+                  <span className="flex-shrink mx-4 text-slate-400 text-[10px] font-bold uppercase tracking-widest">
+                    {lang === 'vi' ? 'Hoặc nhập thủ công' : 'または手動入力'}
+                  </span>
+                  <div className="flex-grow border-t border-[#E5E2D9]"></div>
+                </div>
               </div>
 
               {loginError && (
