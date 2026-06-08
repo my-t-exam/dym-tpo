@@ -16,6 +16,9 @@ import {
 import { translations } from './data/translations';
 
 export default function App() {
+  const googleClientId = (import.meta as any).env.VITE_GOOGLE_CLIENT_ID || '';
+  const hasGoogleClientId = !!googleClientId && googleClientId.trim() !== '' && !googleClientId.startsWith('YOUR_') && googleClientId.includes('.apps.googleusercontent.com');
+
   const [lang, setLang] = useState<Language>('vi');
   const [members, setMembers] = useState<Member[]>([]);
   const [currentMember, setCurrentMember] = useState<Member | null>(null);
@@ -404,18 +407,60 @@ export default function App() {
 
               {/* Google Sign-In Options */}
               <div className="flex flex-col items-center justify-center pt-2 pb-2 space-y-4">
-                <div className="w-full flex justify-center">
-                  <GoogleLogin
-                    onSuccess={handleGoogleSuccess}
-                    onError={() => {
-                      setLoginError(lang === 'vi' ? 'Đăng nhập Google thất bại!' : 'Googleログインに失敗しました。');
-                    }}
-                    theme="filled_blue"
-                    size="large"
-                    shape="pill"
-                    text="continue_with"
-                  />
-                </div>
+                {!hasGoogleClientId ? (
+                  <div className="w-full bg-amber-50 border border-amber-200 rounded-xl p-3.5 text-xs text-amber-900 leading-relaxed space-y-3 shadow-xs">
+                    <div className="font-bold flex items-center gap-1.5 text-amber-900">
+                      ⚠️ {lang === 'vi' ? 'Google Sign-In chưa được thiết lập!' : 'Googleログインが設定されていません'}
+                    </div>
+                    
+                    <p className="text-[11px] text-amber-700">
+                      {lang === 'vi' ? (
+                        <>
+                          Khoá <strong>Client ID</strong> hiện tại đang trống. Vui lòng thêm biến môi trường <strong>VITE_GOOGLE_CLIENT_ID</strong> vào mục <strong>Settings</strong> trong AI Studio hoặc tệp <code>.env</code>.
+                        </>
+                      ) : (
+                        <>
+                          <strong>Client ID</strong>が設定されていません。AI Studioの<strong>Settings</strong>または<code>.env</code>ファイルに環境変数 <strong>VITE_GOOGLE_CLIENT_ID</strong> を追加してください。
+                        </>
+                      )}
+                    </p>
+
+                    <div className="bg-white/70 p-2.5 rounded-lg border border-amber-200/50 space-y-1.5 text-[10px] text-slate-600">
+                      <div className="font-bold text-slate-700">
+                        {lang === 'vi' ? 'Ủy quyền trên Google Cloud Console:' : 'Google Cloud Consoleでの設定情報:'}
+                      </div>
+                      <div>
+                        <strong>Authorized JavaScript Origin:</strong>
+                        <div 
+                          className="mt-1 select-all bg-slate-50 border border-slate-200 p-1.5 rounded font-mono font-bold text-slate-800 text-[9px] break-all cursor-pointer flex justify-between items-center hover:bg-slate-100 transition"
+                          onClick={() => {
+                            navigator.clipboard.writeText(window.location.origin);
+                            alert(lang === 'vi' ? 'Đã sao chép Origin!' : 'オリジンをコピーしました！');
+                          }}
+                        >
+                          <span className="truncate">{window.location.origin}</span>
+                          <span className="text-[8px] bg-slate-200 text-slate-600 px-1 py-0.5 rounded font-sans shrink-0 ml-1">Copy</span>
+                        </div>
+                        <span className="text-[9px] text-slate-400 block mt-1 leading-tight">
+                          {lang === 'vi' ? '⚠️ Lưu ý: KHÔNG được chứa dấu gạch chéo ở cuối (/)' : '⚠️ 注意: 末尾にスラッシュ（/）を含めないでください'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="w-full flex justify-center">
+                    <GoogleLogin
+                      onSuccess={handleGoogleSuccess}
+                      onError={() => {
+                        setLoginError(lang === 'vi' ? 'Đăng nhập Google thất bại!' : 'Googleログインに失敗しました。');
+                      }}
+                      theme="filled_blue"
+                      size="large"
+                      shape="pill"
+                      text="continue_with"
+                    />
+                  </div>
+                )}
                 
                 <div className="relative flex py-1 items-center w-full">
                   <div className="flex-grow border-t border-[#E5E2D9]"></div>
