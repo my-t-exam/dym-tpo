@@ -206,6 +206,14 @@ async function startServer() {
     res.json({ status: "ok" });
   });
 
+  // API Client Clock Synchronization endpoint
+  app.get("/api/server-time", (req, res) => {
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+    res.json({ time: Date.now() });
+  });
+
   // API 2: Get whole DB
   app.get("/api/db", async (req, res) => {
     res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
