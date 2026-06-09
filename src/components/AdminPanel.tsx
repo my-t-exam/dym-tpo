@@ -1217,7 +1217,7 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                               </span>
                               {ex.team && (
                                 <span className="bg-[#5A5A40]/10 text-[#5A5A40] border border-[#5A5A40]/25 text-[9px] uppercase font-bold px-2 py-0.5 rounded">
-                                  📁 Team: {ex.team}
+                                  Team: {ex.team}
                                 </span>
                               )}
                             </div>
@@ -1420,7 +1420,7 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                               </span>
                               {(m?.team || sub.employeeTeam) && (
                                 <span className="bg-[#5A5A40]/10 text-[#5A5A40] border border-[#5A5A40]/15 px-2 py-0.5 rounded text-[10px] font-bold block w-max">
-                                  📁 {m?.team || sub.employeeTeam}
+                                  {m?.team || sub.employeeTeam}
                                 </span>
                               )}
                             </td>
@@ -1743,7 +1743,7 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                           }
                           return list.map((team) => (
                             <div key={team} className="flex items-center justify-between bg-white border border-slate-150 rounded px-2 py-1.5 text-[11px] font-bold text-slate-600">
-                              <span>📁 {team}</span>
+                              <span>{team}</span>
                               <button
                                 type="button"
                                 onClick={() => {
@@ -2085,7 +2085,7 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                                   </span>
                                   {m.team && (
                                     <span className="bg-[#D4A373]/10 text-[#5A5A40] border border-[#D4A373]/25 text-[9px] px-2 py-0.5 rounded-full font-bold">
-                                      📁 {m.team}
+                                      {m.team}
                                     </span>
                                   )}
                                 </div>
@@ -2778,7 +2778,7 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                     <option value="">{lang === 'vi' ? '--- Tất cả Team thuộc bộ phận này ---' : '--- すべてのチームを対象 ---'}</option>
                     {(deptTeams[formDepartment] || []).map((tName) => (
                       <option key={tName} value={tName}>
-                        📁 {tName}
+                        {tName}
                       </option>
                     ))}
                   </select>
