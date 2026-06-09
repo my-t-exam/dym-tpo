@@ -948,9 +948,11 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
                         {idx + 1}
                       </span>
                       <div>
-                        <h4 className="font-bold text-[#1A1A1A] text-sm leading-relaxed whitespace-pre-wrap">{q.text}</h4>
+                        <h4 className="font-bold text-[#1A1A1A] text-sm leading-relaxed whitespace-pre-wrap">
+                          {q.text} <span className="text-xs font-semibold text-slate-500 normal-case ml-1">({q.points} {t.points})</span>
+                        </h4>
                         <span className="text-[10px] bg-[#F9F8F5] border border-[#E5E2D9] text-[#5A5A40] font-extrabold px-2.5 py-0.5 rounded-md mt-1.5 inline-block uppercase">
-                          {q.type === 'single' ? t.singleChoiceDesc : t.multiChoiceDesc} ({q.points} {t.points})
+                          {q.type === 'single' ? t.singleChoiceDesc : t.multiChoiceDesc}
                         </span>
                       </div>
                     </div>
@@ -984,7 +986,7 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
                                   {isChecked && <CheckCircle className="w-3 h-3 text-white stroke-[3px]" />}
                                 </div>
                               )}
-                              <span className="text-xs leading-relaxed whitespace-pre-wrap">{option}</span>
+                              <span className="text-sm leading-relaxed whitespace-pre-wrap">{option}</span>
                             </div>
                           </div>
                         );
@@ -1118,7 +1120,7 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
                         const isChosen = userSelected.includes(optIdx);
                         const isCorrectOpt = correct.includes(optIdx);
 
-                        let appearance = 'text-slate-600 text-xs';
+                        let appearance = 'text-slate-600 text-sm';
                         if (isChosen && isCorrectOpt) {
                           appearance = 'text-emerald-700 font-bold flex items-center gap-1.5';
                         } else if (isChosen && !isCorrectOpt) {
@@ -1128,7 +1130,7 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
                         }
 
                         return (
-                          <div key={optIdx} className="text-xs py-0.5 flex flex-wrap items-center gap-2">
+                          <div key={optIdx} className="text-sm py-0.5 flex flex-wrap items-center gap-2">
                             <span className={`${appearance} whitespace-pre-wrap`}>{opt}</span>
                             <div className="flex gap-1 text-[8px] font-bold">
                               {isChosen && <span className="bg-[#5A5A40]/10 border border-[#5A5A40]/20 px-1 py-0.2 rounded text-[#5A5A40]">
