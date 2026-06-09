@@ -2839,10 +2839,11 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                       <div className="md:col-span-2">
                         <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">{lang === 'vi' ? 'Nội dung câu hỏi' : '設問テキスト'}</label>
-                        <input
-                          type="text"
+                        <textarea
                           required
-                          className="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus:border-[#5A5A40] font-bold"
+                          rows={2}
+                          className="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus:border-[#5A5A40] font-bold resize-y"
+                          placeholder={lang === 'vi' ? 'Nhập câu hỏi... (Nhấn Enter để xuống dòng)' : '質問を入力してください... (Enterキーで改行できます)'}
                           value={q.text}
                           onChange={(e) => updateQuestionText(qIdx, e.target.value)}
                         />
@@ -2922,10 +2923,11 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                               <Check className="w-3.5 h-3.5 stroke-[3px]" />
                             </button>
 
-                            <input
-                              type="text"
+                            <textarea
                               required
-                              className="grow bg-white border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-[#5A5A40] font-medium"
+                              rows={1}
+                              placeholder={lang === 'vi' ? 'Nhập phương án trả lời...' : '選択肢を入力してください...'}
+                              className="grow bg-white border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-[#5A5A40] font-medium resize-y"
                               value={option}
                               onChange={(e) => updateOptionText(qIdx, optIdx, e.target.value)}
                             />
@@ -3029,7 +3031,7 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                 return (
                   <div key={q.id} className="border border-slate-150 rounded-xl p-4 bg-slate-50/50">
                     <div className="flex justify-between gap-4">
-                      <span className="font-bold text-slate-900 text-xs">
+                      <span className="font-bold text-slate-900 text-xs whitespace-pre-wrap">
                         {lang === 'vi' ? `Câu ${qIndex + 1}:` : `問 ${qIndex + 1}:`} {q.text}
                       </span>
                       <span className={`text-[9px] font-bold px-2 py-0.5 rounded shrink-0 ${
@@ -3055,7 +3057,7 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
 
                         return (
                           <div key={oIdx} className="flex items-center gap-2 py-0.5">
-                            <span className={flagColor}>{opt}</span>
+                            <span className={`${flagColor} whitespace-pre-wrap`}>{opt}</span>
                             <div className="flex gap-1 text-[8px] font-bold">
                               {isChosen && <span className="bg-[#5A5A40]/10 border border-[#5A5A40]/20 px-1 py-0.2 rounded text-[#5A5A40] text-[8px]">
                                 {t.userSelected}
