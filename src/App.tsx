@@ -499,39 +499,47 @@ export default function App() {
                 
                 {/* Simulated Greeting Text banner */}
                 {currentMember && (
-                  <p className="text-[#F5EBE0] text-xs font-bold font-mono tracking-wider bg-black/25 px-4 py-1.5 rounded-full w-max mx-auto border border-white/15">
-                    Hello employee:{" "}
-                    <span className="font-serif italic underline text-white">{currentMember.name}</span> 
+                  <p className="text-[#F5EBE0] text-xs sm:text-sm font-bold font-mono tracking-wider bg-black/25 px-5 py-2 rounded-full w-max mx-auto border border-white/15">
+                    {lang === 'vi' ? 'Chào nhân viên: ' : 'Chào nhân viên (社員): '}
+                    <span className="font-serif italic underline text-white font-extrabold text-sm sm:text-base">{currentMember.name}</span> 
                     {` (${currentMember.department})`}
                   </p>
                 )}
 
                 {/* TPO Motto Box (Requirement) */}
-                <div className="bg-white/95 text-slate-800 rounded-xl p-4 mt-6 text-left shadow-lg border border-slate-200 max-w-xl mx-auto space-y-3" id="tpo-motto-callout">
-                  <h3 className="font-bold text-center text-xs text-[#5A5A40] uppercase tracking-wider border-b border-slate-100 pb-1.5 leading-relaxed">
-                    {lang === 'vi' ? (
-                      <span>💡<br />TPO LÀ GÌ?</span>
-                    ) : '💡 TPOとは？'}
-                  </h3>
-                  <div className="grid grid-cols-3 gap-2 text-center">
-                    <div className="p-2 bg-[#5A5A40]/5 rounded-lg border border-[#5A5A40]/10">
-                      <span className="font-black text-[#5A5A40] text-sm block">T</span>
-                      <span className="text-[10px] text-slate-400 font-bold">Time (Thời gian)</span>
+                <div className="bg-white text-slate-800 rounded-2xl p-6 sm:p-8 mt-8 text-left shadow-2xl border-2 border-[#5A5A40]/25 max-w-3xl mx-auto space-y-5 transform hover:scale-[1.01] transition-transform duration-300" id="tpo-motto-callout">
+                  <div className="text-center space-y-1">
+                    <span className="text-2xl">💡</span>
+                    <h3 className="font-black text-center text-base sm:text-lg text-[#5A5A40] uppercase tracking-widest pb-2 border-b border-[#5A5A40]/15 leading-relaxed">
+                      {lang === 'vi' ? 'MỤC TIÊU TPO LÀ GÌ?' : 'TPOとは？ (Time - Place - Occasion)'}
+                    </h3>
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-3.5 text-center">
+                    <div className="p-4 bg-[#5A5A40]/5 rounded-xl border-2 border-[#5A5A40]/10 hover:border-[#5A5A40]/20 transition-all shadow-sm">
+                      <span className="font-black text-[#5A5A40] text-3xl block leading-none mb-1">T</span>
+                      <span className="text-xs text-[#5A5A40] font-black block">Time</span>
+                      <span className="text-[11px] text-slate-400 font-bold block mt-0.5">{lang === 'vi' ? 'Thời gian' : '時間'}</span>
                     </div>
-                    <div className="p-2 bg-[#5A5A40]/5 rounded-lg border border-[#5A5A40]/10">
-                      <span className="font-black text-[#5A5A40] text-sm block">P</span>
-                      <span className="text-[10px] text-slate-400 font-bold">Place (Địa điểm)</span>
+                    <div className="p-4 bg-[#5A5A40]/5 rounded-xl border-2 border-[#5A5A40]/10 hover:border-[#5A5A40]/20 transition-all shadow-sm">
+                      <span className="font-black text-[#5A5A40] text-3xl block leading-none mb-1">P</span>
+                      <span className="text-xs text-[#5A5A40] font-black block">Place</span>
+                      <span className="text-[11px] text-slate-400 font-bold block mt-0.5">{lang === 'vi' ? 'Địa điểm' : '場所'}</span>
                     </div>
-                    <div className="p-2 bg-[#5A5A40]/5 rounded-lg border border-[#5A5A40]/10">
-                      <span className="font-black text-[#5A5A40] text-sm block">O</span>
-                      <span className="text-[10px] text-slate-400 font-bold">Occasion (Bối cảnh)</span>
+                    <div className="p-4 bg-[#5A5A40]/5 rounded-xl border-2 border-[#5A5A40]/10 hover:border-[#5A5A40]/20 transition-all shadow-sm">
+                      <span className="font-black text-[#5A5A40] text-3xl block leading-none mb-1">O</span>
+                      <span className="text-xs text-[#5A5A40] font-black block">Occasion</span>
+                      <span className="text-[11px] text-slate-400 font-bold block mt-0.5">{lang === 'vi' ? 'Bối cảnh' : '場面'}</span>
                     </div>
                   </div>
-                  <p className="text-xs text-[#5A5A40] font-bold text-center leading-relaxed">
-                    {lang === 'vi' 
-                      ? 'Đúng giờ – Phản hồi nhanh – Ứng xử chuyên nghiệp – Trang phục và thái độ phù hợp với mọi hoàn cảnh.'
-                      : '=> 常に時間を守り、迅速に対応し、いかなる空間・服装・態度であっても適切な行動・マナーを維持すること'}
-                  </p>
+
+                  <div className="bg-[#FAF8F5] border border-[#E5E2D9] rounded-xl p-4 shadow-inner">
+                    <p className="text-xs sm:text-sm text-[#1A1A1A] font-extrabold text-center leading-relaxed">
+                      {lang === 'vi' 
+                        ? 'Đúng giờ – Phản hồi nhanh – Ứng xử chuyên nghiệp – Trang phục và thái độ phù hợp với mọi hoàn cảnh.'
+                        : '=> 常に時間を守り、迅速に対応し、いかなる空間・服装・態度であっても適切な行動・マナーを維持すること'}
+                    </p>
+                  </div>
                 </div>
 
               </div>
