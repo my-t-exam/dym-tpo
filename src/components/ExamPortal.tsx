@@ -577,7 +577,7 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
                             </span>
                             {ex.team && (
                               <span className="bg-[#5A5A40]/10 text-[#5A5A40] border border-[#5A5A40]/25 text-[9px] uppercase font-bold px-2 py-0.5 rounded font-mono">
-                                📁 Team: {ex.team}
+                                Team: {ex.team}
                               </span>
                             )}
                             {isOngoing && (
