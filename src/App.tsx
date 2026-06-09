@@ -53,11 +53,8 @@ export default function App() {
         const found = storedM.find(m => m.id === savedMemberId);
         if (found) {
           setCurrentMember(found);
-          if (found.role === 'superadmin' || found.role === 'admin') {
-            setIsAdminMode(true);
-          } else {
-            setIsAdminMode(false);
-          }
+          // Always display the employee portal first on initial load / page refresh
+          setIsAdminMode(false);
         } else {
           setCurrentMember(null);
         }
@@ -141,7 +138,7 @@ export default function App() {
       setLoginEmail('');
       setLoginPassword('');
       setLoginError('');
-      setIsAdminMode(true); // default to management view for administrative accounts
+      setIsAdminMode(false); // Display Employee Portal first even for administrative accounts
     }
   };
 
@@ -177,12 +174,8 @@ export default function App() {
       setCurrentMember(matched);
       localStorage.setItem('employee_testing_current_member_id', matched.id);
       
-      // Auto-set admin mode for admin/superadmin accounts
-      if (matched.role === 'superadmin' || matched.role === 'admin') {
-        setIsAdminMode(true);
-      } else {
-        setIsAdminMode(false);
-      }
+      // Always display the Employee portal first upon login
+      setIsAdminMode(false);
 
       setLoginError('');
       setLoginEmail('');
