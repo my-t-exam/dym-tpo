@@ -16,6 +16,7 @@ import {
   addAuditLog
 } from '../lib/database';
 import { translations } from '../data/translations';
+import { getSyncedTime, parseAsVietnamTime, formatInVietnamTime } from '../lib/time';
 
 interface ExamPortalProps {
   currentMember: Member | null;
@@ -107,9 +108,9 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
 
   // Handle Exam Selection (Requirement 1, Requirement 4)
   const handleSelectExam = (exam: Exam) => {
-    const now = new Date();
-    const start = new Date(exam.startTime);
-    const end = new Date(exam.endTime);
+    const now = getSyncedTime();
+    const start = parseAsVietnamTime(exam.startTime);
+    const end = parseAsVietnamTime(exam.endTime);
 
     // Check if employee has already taken this exam (Requirement 4)
     if (currentMember) {
@@ -160,9 +161,9 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
       return;
     }
 
-    const now = new Date();
-    const start = new Date(selectedExam.startTime);
-    const end = new Date(selectedExam.endTime);
+    const now = getSyncedTime();
+    const start = parseAsVietnamTime(selectedExam.startTime);
+    const end = parseAsVietnamTime(selectedExam.endTime);
 
     if (now < start) {
       setScreen('waiting-room');
@@ -188,8 +189,8 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
     }
 
     const checkTimeAndCountdown = () => {
-      const now = new Date();
-      const start = new Date(selectedExam.startTime);
+      const now = getSyncedTime();
+      const start = parseAsVietnamTime(selectedExam.startTime);
       const diffMs = start.getTime() - now.getTime();
 
       if (diffMs <= 0) {
@@ -395,12 +396,7 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
   };
 
   const formatDateTimeVietnamese = (isoString: string) => {
-    try {
-      const d = new Date(isoString);
-      return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')} ${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
-    } catch {
-      return isoString;
-    }
+    return formatInVietnamTime(isoString);
   };
 
   // Only display submissions corresponding to this current simulated/logged-in member (Requirement 1)
@@ -470,8 +466,8 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
     })
     .sort((a, b) => {
       // Newest first (Requirement 2)
-      const timeA = new Date(a.createdAt || a.startTime || 0).getTime();
-      const timeB = new Date(b.createdAt || b.startTime || 0).getTime();
+      const timeA = parseAsVietnamTime(a.createdAt || a.startTime || '0').getTime();
+      const timeB = parseAsVietnamTime(b.createdAt || b.startTime || '0').getTime();
       return timeB - timeA;
     });
 
@@ -547,9 +543,9 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
                   </div>
                 ) : (
                   currentExams.map((ex) => {
-                    const now = new Date();
-                    const start = new Date(ex.startTime);
-                    const end = new Date(ex.endTime);
+                    const now = getSyncedTime();
+                    const start = parseAsVietnamTime(ex.startTime);
+                    const end = parseAsVietnamTime(ex.endTime);
                     
                     const isUpcoming = now < start;
                     const isExpired = now > end;
