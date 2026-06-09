@@ -952,7 +952,7 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
                         {idx + 1}
                       </span>
                       <div>
-                        <h4 className="font-bold text-[#1A1A1A] text-sm leading-relaxed">{q.text}</h4>
+                        <h4 className="font-bold text-[#1A1A1A] text-sm leading-relaxed whitespace-pre-wrap">{q.text}</h4>
                         <span className="text-[10px] bg-[#F9F8F5] border border-[#E5E2D9] text-[#5A5A40] font-extrabold px-2.5 py-0.5 rounded-md mt-1.5 inline-block uppercase">
                           {q.type === 'single' ? t.singleChoiceDesc : t.multiChoiceDesc} ({q.points} {t.points})
                         </span>
@@ -988,7 +988,7 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
                                   {isChecked && <CheckCircle className="w-3 h-3 text-white stroke-[3px]" />}
                                 </div>
                               )}
-                              <span className="text-xs leading-relaxed">{option}</span>
+                              <span className="text-xs leading-relaxed whitespace-pre-wrap">{option}</span>
                             </div>
                           </div>
                         );
@@ -1107,7 +1107,7 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
                 return (
                   <div key={q.id} className="border border-[#E5E2D9] rounded-xl p-4 bg-[#F9F8F5]/25">
                     <div className="flex justify-between items-start gap-2">
-                      <span className="text-xs font-semibold text-[#1A1A1A]">
+                      <span className="text-xs font-semibold text-[#1A1A1A] whitespace-pre-wrap">
                         <strong>Question {idx + 1}:</strong> {q.text}
                       </span>
                       <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded uppercase ${
@@ -1133,7 +1133,7 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
 
                         return (
                           <div key={optIdx} className="text-xs py-0.5 flex flex-wrap items-center gap-2">
-                            <span className={appearance}>{opt}</span>
+                            <span className={`${appearance} whitespace-pre-wrap`}>{opt}</span>
                             <div className="flex gap-1 text-[8px] font-bold">
                               {isChosen && <span className="bg-[#5A5A40]/10 border border-[#5A5A40]/20 px-1 py-0.2 rounded text-[#5A5A40]">
                                 {t.userSelected}
