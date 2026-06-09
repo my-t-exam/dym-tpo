@@ -14,6 +14,7 @@ import {
   getStoredMembers, saveMembers, getStoredLanguage, saveLanguage, initSharedDatabase
 } from './lib/database';
 import { translations } from './data/translations';
+import { initTimeSync } from './lib/time';
 
 export default function App() {
   const googleClientId = (import.meta as any).env.VITE_GOOGLE_CLIENT_ID || '';
@@ -41,6 +42,7 @@ export default function App() {
   // Load identity and language configurations
   useEffect(() => {
     const loadDb = async () => {
+      await initTimeSync();
       await initSharedDatabase();
       const storedM = getStoredMembers();
       setMembers(storedM);
