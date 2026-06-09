@@ -509,9 +509,8 @@ export default function App() {
                 {/* TPO Motto Box (Requirement) */}
                 <div className="bg-white text-slate-800 rounded-2xl p-6 sm:p-8 mt-8 text-left shadow-2xl border-2 border-[#5A5A40]/25 max-w-3xl mx-auto space-y-5 transform hover:scale-[1.01] transition-transform duration-300" id="tpo-motto-callout">
                   <div className="text-center space-y-1">
-                    <span className="text-2xl">💡</span>
                     <h3 className="font-black text-center text-base sm:text-lg text-[#5A5A40] uppercase tracking-widest pb-2 border-b border-[#5A5A40]/15 leading-relaxed">
-                      {lang === 'vi' ? 'MỤC TIÊU TPO LÀ GÌ?' : 'TPOとは？ (Time - Place - Occasion)'}
+                      {lang === 'vi' ? '💡TPO LÀ GÌ?' : '💡TPOとは？ (Time - Place - Occasion)'}
                     </h3>
                   </div>
                   
