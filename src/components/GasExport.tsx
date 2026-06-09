@@ -6,6 +6,7 @@
 import React, { useState } from 'react';
 import { Download, FileSpreadsheet, Check, Info, Filter, Calendar, User, BookOpen, RotateCcw } from 'lucide-react';
 import { Submission } from '../types';
+import { formatInVietnamTime } from '../lib/time';
 
 interface GasExportProps {
   submissions: Submission[];
@@ -350,7 +351,7 @@ export default function GasExport({ submissions = [], lang = 'vi' }: GasExportPr
                     <td className="p-2 py-1.5 truncate max-w-[150px]">{sub.examTitle}</td>
                     <td className="p-2 py-1.5 text-center font-bold text-[#5A5A40]">{sub.score} / {sub.maxScore}</td>
                     <td className="p-2 py-1.5 text-right text-slate-400 font-mono text-[10px]">
-                      {new Date(sub.submittedAt).toLocaleDateString(lang === 'vi' ? 'vi-VN' : 'ja-JP')} {sub.submittedAt.slice(11, 16)}
+                      {formatInVietnamTime(sub.submittedAt)}
                     </td>
                   </tr>
                 ))}
