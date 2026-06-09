@@ -4,16 +4,16 @@
   --font-sans: Calibri, Candara, "Segoe UI", Optima, Arial, sans-serif;
   --font-serif: Calibri, Candara, "Segoe UI", Optima, Arial, sans-serif;
   
-  /* Scale font sizes doubled for comfortable reading */
-  --font-size-xs: 1.625rem;   /* Doubled from 0.8125rem */
-  --font-size-sm: 1.875rem;   /* Doubled from 0.9375rem */
-  --font-size-base: 2.125rem; /* Doubled from 1.0625rem */
-  --font-size-lg: 2.35rem;    /* Doubled from 1.175rem */
-  --font-size-xl: 2.65rem;    /* Doubled from 1.325rem */
-  --font-size-2xl: 3.25rem;   /* Doubled from 1.625rem */
-  --font-size-3xl: 4.0rem;    /* Doubled from 2.0rem */
-  --font-size-4xl: 4.5rem;    /* Doubled from 2.25rem */
-  --font-size-5xl: 6.0rem;    /* Doubled from 3.0rem */
+  /* Scale font sizes slightly elevated for optimal legibility and harmony */
+  --font-size-xs: 0.8125rem;   /* ~13px */
+  --font-size-sm: 0.9375rem;   /* ~15px */
+  --font-size-base: 1.0625rem; /* ~17px */
+  --font-size-lg: 1.1875rem;   /* ~19px */
+  --font-size-xl: 1.3125rem;   /* ~21px */
+  --font-size-2xl: 1.625rem;   /* ~26px */
+  --font-size-3xl: 2.0rem;     /* ~32px */
+  --font-size-4xl: 2.5rem;     /* ~40px */
+  --font-size-5xl: 3.125rem;   /* ~50px */
 }
 
 /* Force Calibri as the global font for all text and elements */
@@ -182,22 +182,22 @@ input:focus, select:focus, textarea:focus {
 }
 
 /* 
- * CRITICAL: CUSTOM DOUBLE FONT SIZE OVERRIDES
- * This section perfectly maps and overrides all remaining arbitrary font classes 
- * to be exactly double to satisfy the requirement.
+ * CRITICAL: BALANCED FONT SIZE OVERRIDES
+ * Maps fine-grain utility font size overrides back to a highly professional, 
+ * balanced scale matching a clean 100% zoom screen layout with Calibri font.
  */
-.text-\[8px\] { font-size: 16px !important; }
-.text-\[9px\] { font-size: 18px !important; }
-.text-\[10px\] { font-size: 20px !important; }
-.text-\[11px\] { font-size: 22px !important; }
-.text-\[12px\] { font-size: 24px !important; }
-.text-\[13px\] { font-size: 26px !important; }
-.text-\[14px\] { font-size: 28px !important; }
-.text-\[15px\] { font-size: 30px !important; }
-.text-\[16px\] { font-size: 32px !important; }
-.text-\[18px\] { font-size: 36px !important; }
-.text-\[20px\] { font-size: 40px !important; }
-.text-\[24px\] { font-size: 48px !important; }
-.text-\[30px\] { font-size: 60px !important; }
-.text-\[3\.5xl\] { font-size: 5rem !important; }
-.sm\:text-\[3\.5xl\] { font-size: 5rem !important; }
+.text-\[8px\] { font-size: 10px !important; }
+.text-\[9px\] { font-size: 11px !important; }
+.text-\[10px\] { font-size: 12px !important; }
+.text-\[11px\] { font-size: 13px !important; }
+.text-\[12px\] { font-size: 14px !important; }
+.text-\[13px\] { font-size: 14px !important; }
+.text-\[14px\] { font-size: 15px !important; }
+.text-\[15px\] { font-size: 16px !important; }
+.text-\[16px\] { font-size: 18px !important; }
+.text-\[18px\] { font-size: 19px !important; }
+.text-\[20px\] { font-size: 21px !important; }
+.text-\[24px\] { font-size: 25px !important; }
+.text-\[30px\] { font-size: 31px !important; }
+.text-\[3\.5xl\] { font-size: 2.25rem !important; }
+.sm\:text-\[3\.5xl\] { font-size: 2.25rem !important; }
