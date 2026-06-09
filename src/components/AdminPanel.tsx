@@ -19,6 +19,7 @@ import {
 } from '../lib/database';
 import GasExport from './GasExport';
 import { translations } from '../data/translations';
+import { getSyncedTime, parseAsVietnamTime, formatInVietnamTime, formatToVietnamLocalInput } from '../lib/time';
 
 interface AdminPanelProps {
   onBackToPortal: () => void;
@@ -386,17 +387,11 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
       setFormDepartment('All');
       setFormTeam('');
       
-      const now = new Date();
-      const tomorrow = new Date();
-      tomorrow.setDate(now.getDate() + 1);
+      const now = getSyncedTime();
+      const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
       
-      const formatLocal = (d: Date) => {
-        const pad = (n: number) => n.toString().padStart(2, '0');
-        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-      };
-
-      setFormStartTime(formatLocal(now));
-      setFormEndTime(formatLocal(tomorrow));
+      setFormStartTime(formatToVietnamLocalInput(now));
+      setFormEndTime(formatToVietnamLocalInput(tomorrow));
       setFormDuration(15);
       setFormQuestions([
         {
@@ -963,12 +958,7 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
   const uniqueDepartments = departmentsList;
 
   const formatDateTimeVietnamese = (isoString: string) => {
-    try {
-      const d = new Date(isoString);
-      return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')} ${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
-    } catch {
-      return isoString;
-    }
+    return formatInVietnamTime(isoString);
   };
 
   return (
@@ -1100,8 +1090,8 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                 return dateMatch;
               })
               .sort((a, b) => {
-                const timeA = new Date(a.createdAt || a.startTime || 0).getTime();
-                const timeB = new Date(b.createdAt || b.startTime || 0).getTime();
+                const timeA = parseAsVietnamTime(a.createdAt || a.startTime || '0').getTime();
+                const timeB = parseAsVietnamTime(b.createdAt || b.startTime || '0').getTime();
                 return timeB - timeA; // Display newest first
               });
 
