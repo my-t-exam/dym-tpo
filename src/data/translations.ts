@@ -42,8 +42,8 @@ export const translations = {
     // Exam Taking Portal
     examTakingTitle: "Phiên làm bài thi trực tuyến đang mở",
     questionLabel: "Câu hỏi",
-    singleChoiceDesc: "Câu hỏi chọn một đáp án đúng (Radio)",
-    multiChoiceDesc: "Câu hỏi chọn nhiều đáp án đúng (Checkbox)",
+    singleChoiceDesc: "Chọn một đáp án đúng",
+    multiChoiceDesc: "Chọn nhiều đáp án đúng",
     points: "điểm",
     timerRemaining: "Thời gian còn lại",
     confirmSubmitTitle: "Xác nhận nộp bài",
@@ -159,8 +159,8 @@ export const translations = {
     // Exam Taking Portal
     examTakingTitle: "オンライン試験実施中",
     questionLabel: "問",
-    singleChoiceDesc: "単一選択問題 (ラジオボタン)",
-    multiChoiceDesc: "複数選択問題 (チェックボックス)",
+    singleChoiceDesc: "単一選択",
+    multiChoiceDesc: "複数選択",
     points: "点",
     timerRemaining: "残り時間",
     confirmSubmitTitle: "提出の確認",
