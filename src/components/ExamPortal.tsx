@@ -61,6 +61,11 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
 
   // User answer sheets state
   const [answers, setAnswers] = useState<Record<string, number[]>>({});
+  const answersRef = useRef<Record<string, number[]>>({});
+
+  useEffect(() => {
+    answersRef.current = answers;
+  }, [answers]);
 
   // Finished score states
   const [finalSubmission, setFinalSubmission] = useState<Submission | null>(null);
@@ -291,7 +296,8 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
     if (!selectedExam) return;
 
     // Gradings
-    const { score, maxScore } = calculateScore(selectedExam, answers);
+    const currentAnswers = answersRef.current;
+    const { score, maxScore } = calculateScore(selectedExam, currentAnswers);
 
     // Calculate actual elapsed seconds
     const elapsedSeconds = testStartedAt ? Math.floor((Date.now() - testStartedAt) / 1000) : 0;
@@ -306,7 +312,7 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
       employeeEmail: employeeEmail.trim(),
       employeeDepartment: employeeDepartment.trim() || currentMember?.department || 'N/A',
       employeeTeam: currentMember?.team || '',
-      answers,
+      answers: currentAnswers,
       score,
       maxScore,
       submittedAt: new Date().toISOString(),
