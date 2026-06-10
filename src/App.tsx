@@ -254,7 +254,7 @@ export default function App() {
         <div className="flex flex-col items-center gap-3">
           <div className="w-10 h-10 border-4 border-[#122448] border-t-transparent rounded-full animate-spin"></div>
           <p className="text-[#122448] font-bold text-sm tracking-wide">
-            Đang tải dữ liệu thi cử...
+            Loading...
           </p>
         </div>
       </div>
