@@ -2564,11 +2564,81 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
               <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-x-auto p-4">
                 {(() => {
                   const renderAuditText = (text: string) => {
-                    if (text && text.includes(' | ')) {
+                    if (!text) return '';
+                    if (text.includes(' | ')) {
                       const parts = text.split(' | ');
                       return lang === 'vi' ? parts[0] : parts[1];
                     }
-                    return text;
+                    if (lang === 'vi') {
+                      return text;
+                    }
+                    // Japanese fallback for legacy/old logs stored in system
+                    let jVal = text;
+
+                    // 1. Actions translations
+                    const actionNormal = text.trim().toLowerCase();
+                    if (actionNormal === 'xóa nhân viên') return 'メンバー削除';
+                    if (actionNormal === 'cập nhật bộ phận') return '部署更新';
+                    if (actionNormal === 'nộp bài thi') return '試験提出';
+                    if (actionNormal === 'tạo đề thi mới') return '新規試験作成';
+                    if (actionNormal === 'cập nhật đề thi') return '試験更新';
+                    if (actionNormal === 'thay đổi phân quyền') return '権限変更';
+                    if (actionNormal === 'thêm nhân viên') return 'メンバー追加';
+                    if (actionNormal === 'xóa đề thi') return '試験削除';
+                    if (actionNormal === 'xóa bộ phận') return '部署削除';
+                    if (actionNormal === 'thêm bộ phận') return '部署追加';
+                    if (actionNormal === 'thêm team bộ phận') return 'チーム追加';
+                    if (actionNormal === 'cấu hình google sheets') return 'Google Sheets設定';
+                    if (actionNormal === 'xóa kết quả thi') return '受験結果削除';
+                    if (actionNormal === 'cập nhật nhóm') return 'メンバーチーム更新';
+
+                    // 2. Details translations (regex mapping)
+                    if (/Đã xóa nhân viên:\s*"([^"]+)"\s*\(([^)]+)\)/i.test(jVal)) {
+                      jVal = jVal.replace(/Đã xóa nhân viên:\s*"([^"]+)"\s*\(([^)]+)\)/i, 'メンバー "$1" ($2) を削除しました。');
+                    }
+                    else if (/Đã thay đổi bộ phận của nhân viên\s*"([^"]+)"\s*\(([^)]+)\)\s*thành\s*"([^"]+)"/i.test(jVal)) {
+                      jVal = jVal.replace(/Đã thay đổi bộ phận của nhân viên\s*"([^"]+)"\s*\(([^)]+)\)\s*thành\s*"([^"]+)"/i, 'メンバー "$1" ($2) の部署を「$3」に変更しました。');
+                    }
+                    else if (/Đã nộp bài thi\s*"([^"]+)"\.\s*Kết quả:\s*(\d+)\/(\d+)\s*\((\d+(?:\.\d+)?)\/10 điểm\)(?:\s*\(Do hết thời gian làm bài\))?\.?/i.test(jVal)) {
+                      const isAuto = jVal.toLowerCase().includes('hết thời gian');
+                      const autoSuff = isAuto ? ' (制限時間終了による自動提出)' : '';
+                      jVal = jVal.replace(/Đã nộp bài thi\s*"([^"]+)"\.\s*Kết quả:\s*(\d+)\/(\d+)\s*\((\d+(?:\.\d+)?)\/10 điểm\)(?:\s*\(Do hết thời gian làm bài\))?\.?/i, `試験「$1」を提出しました。結果: $2/$3 ($4/10点)${autoSuff}。`);
+                    }
+                    else if (/Đã tạo đề thi:\s*"([^"]+)"\s*\((\d+)\s*câu hỏi\)/i.test(jVal)) {
+                      jVal = jVal.replace(/Đã tạo đề thi:\s*"([^"]+)"\s*\((\d+)\s*câu hỏi\)/i, '試験問題「$1」を作成しました（$2問）。');
+                    }
+                    else if (/Đã cập nhật đề thi:\s*"([^"]+)"\s*\((\d+)\s*câu hỏi\)/i.test(jVal)) {
+                      jVal = jVal.replace(/Đã cập nhật đề thi:\s*"([^"]+)"\s*\((\d+)\s*câu hỏi\)/i, '試験問題「$1」を更新しました（$2問）。');
+                    }
+                    else if (/Đã thay đổi phân quyền của nhân viên\s*"([^"]+)"\s*\(([^)]+)\)\s*từ\s*([^\s]+)\s*thành\s*([^\s|]+)/i.test(jVal)) {
+                      jVal = jVal.replace(/Đã thay đổi phân quyền của nhân viên\s*"([^"]+)"\s*\(([^)]+)\)\s*từ\s*([^\s]+)\s*thành\s*([^\s|]+)/i, 'メンバー "$1" ($2) の権限を $3 から $4 に変更しました。');
+                    }
+                    else if (/Đã thêm nhân viên mới:\s*"([^"]+)"\s*\(([^)]+)\)\s*tại bộ phận\s*([^\n|]+)/i.test(jVal)) {
+                      jVal = jVal.replace(/Đã thêm nhân viên mới:\s*"([^"]+)"\s*\(([^)]+)\)\s*tại bộ phận\s*([^\n|]+)/i, '新規メンバー "$1" ($2) を「$3」に登録しました。');
+                    }
+                    else if (/Đã thay đổi nhóm của nhân viên\s*"([^"]+)"\s*\(([^)]+)\)\s*thành\s*"([^"]+)"/i.test(jVal)) {
+                      jVal = jVal.replace(/Đã thay đổi nhóm của nhân viên\s*"([^"]+)"\s*\(([^)]+)\)\s*thành\s*"([^"]+)"/i, 'メンバー "$1" ($2) のチームを「$3」に変更しました。');
+                    }
+                    else if (/Đã xóa đề thi:\s*"([^"]+)"/i.test(jVal)) {
+                      jVal = jVal.replace(/Đã xóa đề thi:\s*"([^"]+)"/i, '試験「$1」を削除しました。');
+                    }
+                    else if (/Đã thêm bộ phận nghiệp vụ mới:\s*"([^"]+)"/i.test(jVal)) {
+                      jVal = jVal.replace(/Đã thêm bộ phận nghiệp vụ mới:\s*"([^"]+)"/i, '新規部署「$1」を追加しました。');
+                    }
+                    else if (/Đã xóa bộ phận:\s*"([^"]+)"/i.test(jVal)) {
+                      jVal = jVal.replace(/Đã xóa bộ phận:\s*"([^"]+)"/i, '部署「$1」を削除しました。');
+                    }
+                    else if (/Đã thêm nhóm mới:\s*"([^"]+)"\s*trực thuộc bộ phận\s*"([^"]+)"/i.test(jVal)) {
+                      jVal = jVal.replace(/Đã thêm nhóm mới:\s*"([^"]+)"\s*trực thuộc bộ phận\s*"([^"]+)"/i, '「$2」部署配下に新規チーム「$1」を追加しました。');
+                    }
+                    else if (/Đã xóa kết quả bài thi\s*"([^"]+)"\s*của nhân sự\s*"([^"]+)"\s*\(([^)]+)\)\s*để cho phép thi lại/i.test(jVal)) {
+                      jVal = jVal.replace(/Đã xóa kết quả bài thi\s*"([^"]+)"\s*của nhân sự\s*"([^"]+)"\s*\(([^)]+)\)\s*để cho phép thi lại/i, 'メンバー "$2" ($3) の試験 "$1" の結果を削除しました（再受験可能に設定）。');
+                    }
+                    else if (/Đã cập nhật Web App URL kết nối Google Sheets:\s*"([^"]+)"/i.test(jVal)) {
+                      jVal = jVal.replace(/Đã cập nhật Web App URL kết nối Google Sheets:\s*"([^"]+)"/i, 'Google Sheets連携のWeb App URLを更新しました: "$1"');
+                    }
+
+                    return jVal;
                   };
 
                   const filtered = auditLogs.filter(log => {
@@ -3424,9 +3494,13 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
           <div className="flex items-center justify-between border-b border-slate-200 pb-4 mb-6">
             <div>
               <span className="text-[10px] text-slate-400 font-bold block uppercase">
-                {editingExamId === 'new' ? 'CREATING MASTER EXAM' : 'EDITING MASTER EXAM'}
+                {editingExamId === 'new' 
+                  ? (lang === 'vi' ? 'SOẠN THẢO ĐỀ THI MỚI' : '新規試験問題作成')
+                  : (lang === 'vi' ? 'CẬP NHẬT ĐỀ THI' : '試験問題更新')}
               </span>
-              <h2 className="text-xl font-bold font-serif text-slate-900 mt-0.5">Biên soạn Đề Khảo Sát Tự Động Chấm</h2>
+              <h2 className="text-xl font-bold font-serif text-slate-900 mt-0.5">
+                {lang === 'vi' ? 'Biên soạn Đề Khảo Sát Tự Động Chấm' : '試験問題の作成・自動採点設定'}
+              </h2>
             </div>
             
             <button
@@ -3447,7 +3521,7 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                 <input
                   type="text"
                   required
-                  placeholder="Ví dụ: Đánh giá Năng lực Kỹ sư Cầu nối Việt Nhật tháng 6"
+                  placeholder={lang === 'vi' ? 'Ví dụ: Đánh giá Năng lực Kỹ sư Cầu nối Việt Nhật tháng 6' : '例：6月度ブリッジSE評価テスト'}
                   className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs outline-none focus:border-[#5A5A40] font-bold"
                   value={formTitle}
                   onChange={(e) => setFormTitle(e.target.value)}
@@ -3457,7 +3531,7 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
               <div className="md:col-span-2">
                 <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1">{t.examDescription}</label>
                 <textarea
-                  placeholder="Mô tả tóm tắt mục đích khảo thí..."
+                  placeholder={lang === 'vi' ? 'Mô tả tóm tắt mục đích khảo thí...' : '試験目的の概要説明...'}
                   rows={2}
                   className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs outline-none focus:border-[#5A5A40] font-medium resize-none"
                   value={formDescription}
