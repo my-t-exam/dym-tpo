@@ -224,7 +224,7 @@ export const translations = {
     
     // Member Fields
     employeeName: "社員氏名",
-    employeeEmail: "会社Emailアドレス",
+    employeeEmail: "メールアドレス",
     employeeDept: "配属部門",
     joinedAt: "登録日",
     roleType: "権限職能",

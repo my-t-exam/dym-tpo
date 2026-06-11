@@ -546,9 +546,9 @@ export default function App() {
             <footer className="text-center pb-12 text-[#5A5A40]/70 text-[11px] font-semibold tracking-wide space-y-1 select-none" id="branding-footer">
               <div className="flex items-center justify-center gap-1.5 opacity-85 mb-2">
                 <Building2 className="w-4 h-4 text-[#5A5A40]/60" />
-                <span>Hoạt động bảo mật và vận hành theo quy định Bảo mật Dữ liệu DYM Vietnam.</span>
+                <span>{lang === 'vi' ? 'Hoạt động bảo mật và vận hành theo quy định Bảo mật Dữ liệu DYM Vietnam.' : 'DYM Vietnamデータセキュリティ規定に準拠し、セキュリティ保護と安全な運用の実施を徹底しています。'}</span>
               </div>
-              <p>© 2026 DYM Vietnam Co., Ltd. Tất cả quyền được quản trị an toàn.</p>
+              <p>{lang === 'vi' ? '© 2026 DYM Vietnam Co., Ltd. Tất cả quyền được quản trị an toàn.' : '© 2026 DYM Vietnam Co., Ltd. All rights reserved. すべての権利は安全に管理されています。'}</p>
             </footer>
           </div>
         )}

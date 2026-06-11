@@ -1084,7 +1084,7 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
                 <span className="font-extrabold text-[#1A1A1A]">{finalSubmission.employeeName}</span>
               </div>
               <div className="flex justify-between bg-transparent py-1 border-b border-[#F0EFEA]">
-                <span className="text-[#5A5A40]/70">Email:</span>
+                <span className="text-[#5A5A40]/70">{lang === 'vi' ? 'Email:' : 'メールアドレス:'}</span>
                 <span className="font-semibold text-[#1A1A1A]">{finalSubmission.employeeEmail}</span>
               </div>
               <div className="flex justify-between bg-transparent py-1 border-b border-[#F0EFEA]">
