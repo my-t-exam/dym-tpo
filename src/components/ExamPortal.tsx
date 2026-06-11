@@ -495,7 +495,7 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
                   {t.memberPortalHeader}
                 </span>
                 <h2 className="text-2xl font-bold text-[#1A1A1A] mt-3 font-serif italic uppercase tracking-tight">
-                  {lang === 'vi' ? 'DANH SÁCH ĐỀ THI' : '試験一覧 (DANH SÁCH ĐỀ THI)'}
+                  {lang === 'vi' ? 'DANH SÁCH ĐỀ THI' : '試験一覧'}
                 </h2>
               </div>
 
@@ -652,7 +652,7 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
                     onClick={() => setExamsPage(prev => Math.max(1, prev - 1))}
                     className="p-1 px-2.5 bg-white border border-[#E5E2D9] hover:bg-slate-50 text-[#5A5A40] text-xs font-bold rounded-lg disabled:opacity-40 select-none cursor-pointer transition"
                   >
-                    {lang === 'vi' ? 'Trước' : 'Prev'}
+                    {lang === 'vi' ? 'Trước' : '前へ'}
                   </button>
                   {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
                     <button
@@ -672,7 +672,7 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
                     onClick={() => setExamsPage(prev => Math.min(totalPages, prev + 1))}
                     className="p-1 px-2.5 bg-white border border-[#E5E2D9] hover:bg-slate-50 text-[#5A5A40] text-xs font-bold rounded-lg disabled:opacity-40 select-none cursor-pointer transition"
                   >
-                    {lang === 'vi' ? 'Tiếp' : 'Next'}
+                    {lang === 'vi' ? 'Tiếp' : '次へ'}
                   </button>
                 </div>
               )}

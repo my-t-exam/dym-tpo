@@ -92,6 +92,7 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
   const [memberListTeamFilter, setMemberListTeamFilter] = useState('all');
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
   const [memberRoleFilter, setMemberRoleFilter] = useState<'all' | 'superadmin' | 'admin' | 'member'>('all');
+  const [membersPage, setMembersPage] = useState<number>(1);
 
   // Detailed Submission Modal View
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
@@ -162,6 +163,10 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
       setActiveTab('exams');
     }
   }, [currentMember, activeTab]);
+
+  useEffect(() => {
+    setMembersPage(1);
+  }, [searchMemberQuery, memberListDeptFilter, memberListTeamFilter, memberRoleFilter]);
 
   // Check if current logged-in user is authorized to open Admin area
   const authorized = currentMember && (currentMember.role === 'superadmin' || currentMember.role === 'admin');
@@ -1238,13 +1243,6 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
               </button>
             </div>
             
-            <div className="hidden lg:flex items-center gap-3.5 text-[11px] font-bold text-[#5A5A40] min-w-max bg-[#5A5A40]/5 px-3 py-1 rounded-full border border-[#5A5A40]/10 select-none">
-              <span className="flex items-center gap-1">📝 {exams.length} đề</span>
-              <span className="text-slate-300">|</span>
-              <span className="flex items-center gap-1">👥 {members.length} nhân sự</span>
-              <span className="text-slate-300">|</span>
-              <span className="flex items-center gap-1">📥 {submissions.length} bài nộp</span>
-            </div>
           </div>
 
           {/* TAB CONTENT: EXAMS MANAGER */}
@@ -1391,7 +1389,8 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                   </div>
                 </div>
 
-                <div className="space-y-4">
+                {/* Scrollable list container so filters stay fixed in place without layout push */}
+                <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
                   {filteredExams.length === 0 ? (
                     <div className="text-center py-12 text-slate-400 text-xs border border-dashed border-slate-200 rounded-xl bg-slate-50/50">
                       {lang === 'vi' ? 'Không có đề thi nào phù hợp với bộ lọc.' : '該当する試験データがありません。'}
@@ -1499,7 +1498,7 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
             <div className="space-y-4" id="submissions-tab-content">
               
               {/* SEARCH FILTER HEADERS & DATE OF EXAMS / SYNC OPTIONS */}
-              <div className="sticky top-[68px] z-30 bg-white border border-slate-200 p-4 rounded-xl shadow-md flex flex-col md:flex-row gap-3 items-end">
+              <div className="bg-white border border-slate-200 p-4 rounded-xl shadow-md flex flex-col md:flex-row gap-3 items-end">
                 <div className="grow w-full">
                   <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1">{lang === 'vi' ? 'Tìm kiếm nhân viên' : '社員検索'}</label>
                   <input
@@ -1611,8 +1610,8 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                 </div>
               </div>
 
-              {/* TABLE CONTAINER */}
-              <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-x-auto p-4">
+              {/* TABLE CONTAINER WITH BOUNDED INSIDE SCROLL AREA */}
+              <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-4 overflow-x-auto max-h-[60vh] overflow-y-auto">
                 {filteredSubmissions.length === 0 ? (
                   <div className="text-center py-12 text-slate-400 text-xs font-medium">
                     {lang === 'vi' ? 'Không khớp kết quả bài thi nào' : '条件に合致する受験記録が見つかりません。'}
@@ -2217,7 +2216,7 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                 </div>
 
                 {/* SEARCH BAR & ROLE FILTERS FOR EMPLOYEES */}
-                <div className="sticky top-[68px] z-30 bg-white p-3 rounded-xl border border-slate-150 shadow-xs space-y-3">
+                <div className="bg-white p-3 rounded-xl border border-slate-150 shadow-xs space-y-3">
                   {/* SEARCH BAR FOR EMPLOYEES */}
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -2314,8 +2313,16 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                       return a.name.localeCompare(b.name, 'vi');
                     });
 
-                    // Compute selectable members in this filtered view (cannot select self)
-                    const selectableInList = filteredAndSortedMembers.filter(m => {
+                    // Pagination parameters for Members
+                    const MEMBERS_PER_PAGE = 15;
+                    const totalMembersPages = Math.ceil(filteredAndSortedMembers.length / MEMBERS_PER_PAGE);
+                    const paginatedMembers = filteredAndSortedMembers.slice(
+                      (membersPage - 1) * MEMBERS_PER_PAGE,
+                      membersPage * MEMBERS_PER_PAGE
+                    );
+
+                    // Compute selectable members in this current paginated view (cannot select self)
+                    const selectableInList = paginatedMembers.filter(m => {
                       const isSelf = m.email.toLowerCase().trim() === currentMember?.email?.toLowerCase().trim();
                       if (isSelf) return false;
                       // Superadmin can edit anyone else. Admin can edit members of their department who are member.
@@ -2445,7 +2452,7 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
 
                         {/* LIST ROW ITERATION */}
                         <div className="space-y-2">
-                          {filteredAndSortedMembers.map((m) => {
+                          {paginatedMembers.map((m) => {
                             const isSelf = m.email.toLowerCase().trim() === currentMember?.email?.toLowerCase().trim();
                             const isSuper = m.role === 'superadmin';
                             const isAdmin = m.role === 'admin';
@@ -2597,6 +2604,48 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                             );
                           })}
                         </div>
+
+                        {/* Pagination controls for Members */}
+                        {totalMembersPages > 1 && (
+                          <div className="flex items-center justify-center gap-2 mt-6 pt-4 border-t border-slate-100" id="members-pagination">
+                            <button
+                              disabled={membersPage === 1}
+                              onClick={() => setMembersPage(prev => Math.max(1, prev - 1))}
+                              className="p-1 px-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-bold rounded-lg disabled:opacity-40 select-none cursor-pointer transition"
+                            >
+                              {lang === 'vi' ? 'Trước' : '前へ'}
+                            </button>
+                            {Array.from({ length: totalMembersPages }, (_, i) => i + 1).map((p) => {
+                              const shouldRender = Math.abs(p - membersPage) < 3 || p === 1 || p === totalMembersPages;
+                              if (!shouldRender) {
+                                if (p === 2 || p === totalMembersPages - 1) {
+                                  return <span key={p} className="text-slate-300 px-1 text-xs font-bold select-none">...</span>;
+                                }
+                                return null;
+                              }
+                              return (
+                                <button
+                                  key={p}
+                                  onClick={() => setMembersPage(p)}
+                                  className={`w-7 h-7 text-xs font-bold rounded-full transition cursor-pointer ${
+                                    membersPage === p 
+                                      ? 'bg-[#5A5A40] text-white shadow-xs' 
+                                      : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-55'
+                                  }`}
+                                >
+                                  {p}
+                                </button>
+                              );
+                            })}
+                            <button
+                              disabled={membersPage === totalMembersPages}
+                              onClick={() => setMembersPage(prev => Math.min(totalMembersPages, prev + 1))}
+                              className="p-1 px-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-bold rounded-lg disabled:opacity-40 select-none cursor-pointer transition"
+                            >
+                              {lang === 'vi' ? 'Tiếp' : '次へ'}
+                            </button>
+                          </div>
+                        )}
                       </div>
                     );
                   })()}
@@ -2745,7 +2794,7 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                   {/* Filter 1: Deployment Date */}
                   <div>
                     <label className="block text-[9px] uppercase font-bold text-slate-400 mb-1">
-                      {lang === 'vi' ? 'Ngày triển khai đề thi' : '試験実施日 (Deployment Date)'}
+                      {lang === 'vi' ? 'Ngày triển khai đề thi' : '試験実施日'}
                     </label>
                     <div className="relative">
                       <input
@@ -2772,7 +2821,7 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                           onClick={() => setDashboardDateFilter('')}
                           className="absolute right-2 top-1.5 text-[9px] font-bold text-slate-400 hover:text-slate-600 transition"
                         >
-                          {lang === 'vi' ? 'Xóa' : 'clear'}
+                          {lang === 'vi' ? 'Xóa' : 'クリア'}
                         </button>
                       )}
                     </div>
@@ -2802,7 +2851,7 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                   {/* Filter 3: Select Department */}
                   <div>
                     <label className="block text-[9px] uppercase font-bold text-slate-400 mb-1">
-                      {lang === 'vi' ? 'Xem tiến độ theo bộ phận' : '部署フィルター (Department)'}
+                      {lang === 'vi' ? 'Xem tiến độ theo bộ phận' : '部署フィルター'}
                     </label>
                     <select
                       className="w-full bg-slate-50 border border-slate-200 rounded-lg py-1.5 px-2 text-xs outline-none focus:border-[#5A5A40] font-bold cursor-pointer transition disabled:opacity-60 disabled:cursor-not-allowed"
@@ -3221,7 +3270,9 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                               return (
                                 <div key={stat.name} className="text-xs font-bold text-slate-600">
                                   <div className="flex justify-between items-center mb-1">
-                                    <span className="text-slate-800">{stat.name}</span>
+                                    <span className="text-slate-800">
+                                      {stat.name ? (lang === 'vi' ? `Team ${stat.name}` : `${stat.name}チーム`) : (lang === 'vi' ? 'Không phân nhóm' : '未所属')}
+                                    </span>
                                     <span className="font-black text-slate-700">{stat.submitted}/{stat.total} ({stat.percentage}%)</span>
                                   </div>
                                   <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden flex">
@@ -3275,7 +3326,7 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                                       </span>
                                       <div>
                                         <span className="font-extrabold text-slate-800 block text-[11px]">{matchedMb?.name || sub.employeeEmail}</span>
-                                        <span className="text-[9px] text-slate-400 font-semibold block">{matchedMb?.department} • Team {matchedMb?.team || 'N/A'}</span>
+                                        <span className="text-[9px] text-slate-400 font-semibold block">{matchedMb?.department} • {matchedMb?.team ? (lang === 'vi' ? `Team ${matchedMb.team}` : `${matchedMb.team}チーム`) : (lang === 'vi' ? 'Không phân nhóm' : '未所属')}</span>
                                       </div>
                                     </div>
                                     <div className="text-right">
@@ -3313,7 +3364,7 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                                   </div>
                                   <div className="text-right">
                                     <span className="bg-rose-50 text-rose-600 border border-rose-100 text-[8px] font-extrabold px-1.5 py-0.5 rounded uppercase">
-                                      {m.department} • Team {m.team || 'N/A'}
+                                      {m.department} • {m.team ? (lang === 'vi' ? `Team ${m.team}` : `${m.team}チーム`) : (lang === 'vi' ? 'Không phân nhóm' : '未所属')}
                                     </span>
                                   </div>
                                 </div>
@@ -3423,7 +3474,7 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                                     <span className="font-extrabold text-slate-800 block text-[11px]">{m.name}</span>
                                     <span className="text-[9px] text-slate-400 block mt-0.5">{m.email}</span>
                                     <span className="bg-slate-100 border text-[8px] px-1.5 py-0.5 rounded text-slate-500 inline-block mt-1 font-bold">
-                                      {m.department} • Team {m.team || 'N/A'}
+                                      {m.department} • {m.team ? (lang === 'vi' ? `Team ${m.team}` : `${m.team}チーム`) : (lang === 'vi' ? 'Không phân nhóm' : '未所属')}
                                     </span>
                                   </div>
 
@@ -3470,7 +3521,7 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                                   <span className="font-extrabold text-slate-800 block text-[11px]">{m.name}</span>
                                   <span className="text-[9px] text-slate-400 block mt-0.5">{m.email}</span>
                                   <span className="bg-slate-100 border text-[8px] px-1.5 py-0.5 rounded text-slate-500 inline-block mt-1 font-bold">
-                                    {m.department} • Team {m.team || 'N/A'}
+                                    {m.department} • {m.team ? (lang === 'vi' ? `Team ${m.team}` : `${m.team}チーム`) : (lang === 'vi' ? 'Không phân nhóm' : '未所属')}
                                   </span>
                                 </div>
 
