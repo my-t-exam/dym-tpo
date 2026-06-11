@@ -203,12 +203,10 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
     }
     saveSheetsUrl(sheetsUrl);
     addAuditLog(
-      lang === 'vi' ? 'Cấu hình Google Sheets' : 'Google Sheets設定',
+      'Cấu hình Google Sheets | Google Sheets設定',
       currentMember?.name || 'Unknown',
       currentMember?.email || 'unknown@dymvietnam.net',
-      lang === 'vi' 
-        ? `Đã cập nhật Web App URL kết nối Google Sheets: "${sheetsUrl || 'Đã xóa URL'}"`
-        : `Google Sheets連携のWeb App URLを更新しました: "${sheetsUrl || 'URLの削除'}"`
+      `Đã cập nhật Web App URL kết nối Google Sheets: "${sheetsUrl || 'Đã xóa URL'}" | Google Sheets連携のWeb App URLを更新しました: "${sheetsUrl || 'URLの削除'}"`
     );
     setAuditLogs(getStoredAuditLogs());
     alert(lang === 'vi' ? 'Đã kích hoạt lưu liên kết kết nối Google Sheet thành công!' : 'GoogleスプレッドシートのWeb App接続が更新されました！');
@@ -369,12 +367,10 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
         setExams(updated);
         saveExams(updated);
         addAuditLog(
-          lang === 'vi' ? 'Xóa đề thi' : '試験問題の削除',
+          'Xóa đề thi | 試験問題の削除',
           currentMember?.name || 'Unknown',
           currentMember?.email || 'unknown@dymvietnam.net',
-          lang === 'vi' 
-            ? `Đã xóa đề thi: "${exam.title}"` 
-            : `試験問題を削除しました: "${exam.title}"`
+          `Đã xóa đề thi: "${exam.title}" | 試験問題を削除しました: "${exam.title}"`
         );
         setAuditLogs(getStoredAuditLogs());
         setCustomModal(null);
@@ -558,13 +554,13 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
     saveExams(updatedExamsList);
     addAuditLog(
       editingExamId === 'new' 
-        ? (lang === 'vi' ? 'Tạo đề thi mới' : '新規試験問題作成')
-        : (lang === 'vi' ? 'Cập nhật đề thi' : '試験問題更新'),
+        ? 'Tạo đề thi mới | 新規試験問題作成'
+        : 'Cập nhật đề thi | 試験問題更新',
       currentMember?.name || 'Unknown',
       currentMember?.email || 'unknown@dymvietnam.net',
-      lang === 'vi' 
-        ? `Đã ${editingExamId === "new" ? "tạo" : "cập nhật"} đề thi: "${updatedExam.title}" (${updatedExam.questions.length} câu hỏi)` 
-        : `試験問題 "${updatedExam.title}" を${editingExamId === "new" ? "作成" : "更新"}しました（${updatedExam.questions.length}問）`
+      editingExamId === 'new'
+        ? `Đã tạo đề thi: "${updatedExam.title}" (${updatedExam.questions.length} câu hỏi) | 試験問題 "${updatedExam.title}" を作成しました（${updatedExam.questions.length}問）`
+        : `Đã cập nhật đề thi: "${updatedExam.title}" (${updatedExam.questions.length} câu hỏi) | 試験問題 "${updatedExam.title}" を更新しました（${updatedExam.questions.length}問）`
     );
     setAuditLogs(getStoredAuditLogs());
     setEditingExamId(null);
@@ -611,12 +607,10 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
 
         // Add to audit logs
         addAuditLog(
-          lang === 'vi' ? 'Xóa kết quả thi' : '受験結果 of 削除',
+          'Xóa kết quả thi | 受験結果削除',
           currentMember.name,
           currentMember.email,
-          lang === 'vi'
-            ? `Đã xóa kết quả bài thi "${sub.examTitle}" của nhân sự "${sub.employeeName}" (${sub.employeeEmail}) để cho phép thi lại.`
-            : `メンバー "${sub.employeeName}" (${sub.employeeEmail}) の試験 "${sub.examTitle}" の結果を削除しました（再受験可能に設定）。`
+          `Đã xóa kết quả bài thi "${sub.examTitle}" của nhân sự "${sub.employeeName}" (${sub.employeeEmail}) để cho phép thi lại. | メンバー "${sub.employeeName}" (${sub.employeeEmail}) の試験 "${sub.examTitle}" の結果を削除しました（再受験可能に設定）。`
         );
         
         setAuditLogs(getStoredAuditLogs());
@@ -1396,11 +1390,11 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                             <div className="flex items-center flex-wrap gap-2">
                               <h4 className="font-bold text-slate-800 text-sm font-serif">{ex.title}</h4>
                               <span className="bg-[#D4A373]/10 text-[#5A5A40] border border-[#D4A373]/25 text-[9px] uppercase font-bold px-2 py-0.5 rounded">
-                                🎯 {lang === 'vi' ? 'Bộ phận' : '部門'}: {ex.department ? ex.department : (lang === 'vi' ? 'Tất cả' : 'すべて')}
+                                🎯 {lang === 'vi' ? 'Bộ phận áp dụng' : '対象部署'}: {ex.department && ex.department !== 'All' ? ex.department : (lang === 'vi' ? 'Tất cả' : 'すべて')}
                               </span>
                               {ex.team && (
                                 <span className="bg-[#5A5A40]/10 text-[#5A5A40] border border-[#5A5A40]/25 text-[9px] uppercase font-bold px-2 py-0.5 rounded">
-                                  {lang === 'vi' ? 'Nhóm: ' : 'チーム: '}{ex.team}
+                                  {ex.team}
                                 </span>
                               )}
                               {(() => {
@@ -1734,12 +1728,10 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                     onClick={() => {
                       saveSheetsUrl(sheetsUrl);
                       addAuditLog(
-                        lang === 'vi' ? 'Cấu hình Google Sheets' : 'Google Sheets設定',
+                        'Cấu hình Google Sheets | Google Sheets設定',
                         currentMember?.name || 'Unknown',
                         currentMember?.email || 'unknown@dymvietnam.net',
-                        lang === 'vi' 
-                          ? `Đã cập nhật Web App URL kết nối Google Sheets: "${sheetsUrl || 'Đã xóa URL'}"`
-                          : `Google Sheets連携のWeb App URLを更新しました: "${sheetsUrl || 'URLの削除'}"`
+                        `Đã cập nhật Web App URL kết nối Google Sheets: "${sheetsUrl || 'Đã xóa URL'}" | Google Sheets連携のWeb App URLを更新しました: "${sheetsUrl || 'URLの削除'}"`
                       );
                       setAuditLogs(getStoredAuditLogs());
                       alert(lang === 'vi' ? 'Đã lưu cấu hình Google Sheets của bạn!' : '設定を正常に保存しました！');
@@ -1794,12 +1786,10 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                             setDepartmentsList(updated);
                             saveDepartments(updated);
                             addAuditLog(
-                              lang === 'vi' ? 'Thêm bộ phận' : '部署追加',
+                              'Thêm bộ phận | 部署追加',
                               currentMember?.name || 'Unknown',
                               currentMember?.email || 'unknown@dymvietnam.net',
-                              lang === 'vi' 
-                                ? `Đã thêm bộ phận nghiệp vụ mới: "${term}"`
-                                : `新規部署 "${term}" を追加しました`
+                              `Đã thêm bộ phận nghiệp vụ mới: "${term}" | 新規部署 "${term}" を追加しました`
                             );
                             setAuditLogs(getStoredAuditLogs());
                             setNewDeptName('');
@@ -1834,12 +1824,10 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                                     setDepartmentsList(updated);
                                     saveDepartments(updated);
                                     addAuditLog(
-                                      lang === 'vi' ? 'Xóa bộ phận' : '部署削除',
+                                      'Xóa bộ phận | 部署削除',
                                       currentMember?.name || 'Unknown',
                                       currentMember?.email || 'unknown@dymvietnam.net',
-                                      lang === 'vi' 
-                                        ? `Đã xóa bộ phận: "${dept}"`
-                                        : `部署 "${dept}" を削除しました`
+                                      `Đã xóa bộ phận: "${dept}" | 部署 "${dept}" を削除しました`
                                     );
                                     setAuditLogs(getStoredAuditLogs());
                                     setCustomModal(null);
@@ -1942,12 +1930,10 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                           setDeptTeams(currentTeams);
                           saveStoredTeams(currentTeams);
                           addAuditLog(
-                            lang === 'vi' ? 'Thêm team bộ phận' : '部門チーム追加',
+                            'Thêm team bộ phận | 部門チーム追加',
                             currentMember?.name || 'Unknown',
                             currentMember?.email || 'unknown@dymvietnam.net',
-                            lang === 'vi' 
-                              ? `Đã thêm nhóm mới: "${cleanTeam}" trực thuộc bộ phận "${dept}"`
-                              : `"${dept}" 部署配下に新規チーム "${cleanTeam}" を追加しました`
+                            `Đã thêm nhóm mới: "${cleanTeam}" trực thuộc bộ phận "${dept}" | "${dept}" 部署配下に新規チーム "${cleanTeam}" を追加しました`
                           );
                           setAuditLogs(getStoredAuditLogs());
                           setNewTeamName('');
@@ -3536,7 +3522,7 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                     setFormTeam(''); // Clear team when department changes
                   }}
                 >
-                  <option value="All">{lang === 'vi' ? 'All (Tất cả bộ phận)' : 'All (全対象)'}</option>
+                  <option value="All">{lang === 'vi' ? 'Tất cả' : 'すべて'}</option>
                   {departmentsList.map((dept) => (
                     <option key={dept} value={dept}>
                       {dept}
