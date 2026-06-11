@@ -235,8 +235,8 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
 
     // Define CSV Headers
     const headers = lang === 'vi' 
-      ? ["Thời Gian Nộp", "Họ Tên", "Email", "Bộ Phận", "Đề Thi", "Điểm Số", "Điểm Tối Đa", "Tỉ Lệ Đạt %", "Thời Gian Làm Bài", "Cách Thức Nộp"]
-      : ["提出日時", "氏名", "メールアドレス", "所属部署", "試験名", "獲得スコア", "最大スコア", "正解率 %", "解答時間", "提出方法"];
+      ? ["Thời Gian Nộp", "Họ Tên", "Email", "Bộ Phận", "Tên Team", "Đề Thi", "Điểm Số", "Điểm Tối Đa", "Tỉ Lệ Đạt %", "Thời Gian Làm Bài", "Cách Thức Nộp"]
+      : ["提出日時", "氏名", "メールアドレス", "所属部署", "チーム名", "試験名", "獲得スコア", "最大スコア", "正解率 %", "解答時間", "提出方法"];
 
     // Format rows
     const rows = listToExport.map(sub => {
@@ -251,11 +251,15 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
         ? (lang === 'vi' ? 'Tự động (Hết giờ)' : '自動提出 (時間切れ)')
         : (lang === 'vi' ? 'Chủ động nộp' : '手動提出');
 
+      const m = members.find(u => u.email.toLowerCase() === sub.employeeEmail.toLowerCase());
+      const teamName = m?.team || sub.employeeTeam || 'N/A';
+      
       const fields = [
-        sub.submittedAt || '',
+        formatInVietnamTime(sub.submittedAt),
         sub.employeeName || '',
         sub.employeeEmail || '',
         sub.employeeDepartment || 'N/A',
+        teamName,
         sub.examTitle || '',
         sub.score,
         sub.maxScore,
@@ -1095,7 +1099,7 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 font-sans text-slate-800" id="admin-panel-viewport">
+    <div className="max-w-full w-full mx-auto px-4 sm:px-6 lg:px-12 py-8 font-sans text-slate-800" id="admin-panel-viewport">
       
       {/* HEADER SECTION */}
       <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 border-b border-slate-200 pb-6 mb-8">
@@ -1412,8 +1416,8 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                                   );
                                 } else {
                                   return (
-                                    <span className="bg-rose-50 text-rose-700 border border-rose-250 text-[9px] uppercase font-extrabold px-2 py-0.5 rounded flex items-center gap-1 shrink-0">
-                                      <span className="w-1 bg-rose-500 h-1 bg-rose-500 rounded-full"></span>
+                                    <span className="bg-rose-50 text-rose-700 border border-rose-200 text-[9px] uppercase font-extrabold px-2 py-0.5 rounded flex items-center gap-1 shrink-0">
+                                      <span className="w-1 bg-rose-500 h-1 rounded-full"></span>
                                       {lang === 'vi' ? '🔴 Đã đóng' : '終了'}
                                     </span>
                                   );
@@ -1485,7 +1489,7 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                 <div className="w-full md:w-48">
                   <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1">{t.tabExams}</label>
                   <select
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg py-1.5 px-2 text-xs outline-none focus:border-[#5A5A40] font-bold cursor-pointer"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg py-1.5 pl-3 pr-10 text-xs outline-none focus:border-[#5A5A40] font-bold cursor-pointer transition hover:bg-slate-100"
                     value={selectedExamFilter}
                     onChange={(e) => setSelectedExamFilter(e.target.value)}
                   >
@@ -1494,10 +1498,10 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                   </select>
                 </div>
 
-                <div className="w-full md:w-48">
+                <div className="w-full md:w-36 flex-shrink-0">
                   <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1">{t.employeeDept}</label>
                   <select
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg py-1.5 px-2 text-xs outline-none focus:border-[#5A5A40] font-bold cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg py-1.5 pl-3 pr-10 text-xs outline-none focus:border-[#5A5A40] font-bold cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed transition hover:bg-slate-100"
                     value={selectedDeptFilter}
                     disabled={currentMember?.role === 'admin'}
                     onChange={(e) => {
@@ -1506,7 +1510,7 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                     }}
                   >
                     {currentMember?.role === 'admin' ? (
-                      <option value={currentMember.department}>{currentMember.department} ({lang === 'vi' ? 'Phòng ban của bạn' : '担当チーム'})</option>
+                      <option value={currentMember.department}>{currentMember.department} ({lang === 'vi' ? 'Bộ phận của bạn' : '部門'})</option>
                     ) : (
                       <>
                         <option value="all">{t.allDepts}</option>
@@ -1516,10 +1520,10 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                   </select>
                 </div>
 
-                <div className="w-full md:w-48">
+                <div className="w-full md:w-36 flex-shrink-0">
                   <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1">{lang === 'vi' ? 'Nhánh Team' : '所属チーム'}</label>
                   <select
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg py-1.5 px-2 text-xs outline-none focus:border-[#5A5A40] font-bold cursor-pointer"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg py-1.5 pl-3 pr-10 text-xs outline-none focus:border-[#5A5A40] font-bold cursor-pointer transition hover:bg-slate-100"
                     value={selectedTeamFilter}
                     onChange={(e) => setSelectedTeamFilter(e.target.value)}
                   >
@@ -1543,10 +1547,10 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                   </select>
                 </div>
 
-                <div className="w-full md:w-48">
+                <div className="w-full md:w-36 flex-shrink-0">
                   <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1">{lang === 'vi' ? 'Lọc Điểm số' : '得点フィルター'}</label>
                   <select
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg py-1.5 px-2 text-xs outline-none focus:border-[#5A5A40] font-bold cursor-pointer"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg py-1.5 pl-3 pr-10 text-xs outline-none focus:border-[#5A5A40] font-bold cursor-pointer transition hover:bg-slate-100"
                     value={selectedScoreFilter}
                     onChange={(e) => setSelectedScoreFilter(e.target.value)}
                   >
@@ -1559,11 +1563,11 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                 </div>
 
                 {/* Submissions Date Filter (Requirement 6) */}
-                <div className="w-full md:w-48">
+                <div className="w-full md:w-32 flex-shrink-0">
                   <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1">{lang === 'vi' ? 'Ngày Thi' : '受検日'}</label>
                   <input
                     type="date"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg py-1.5 px-2 text-xs outline-none focus:border-[#5A5A40] font-bold cursor-pointer"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg py-1.5 px-3 text-xs outline-none focus:border-[#5A5A40] font-bold cursor-pointer"
                     value={submissionsDateFilter}
                     onChange={(e) => setSubmissionsDateFilter(e.target.value)}
                   />
@@ -1596,6 +1600,7 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                         <th className="py-3 px-2">{t.employeeDept}</th>
                         <th className="py-3 px-2">{t.tabExams}</th>
                         <th className="py-3 px-2 text-center">{t.scoreLabel}</th>
+                        <th className="py-3 px-2 text-center">{lang === 'vi' ? 'Kết quả' : '合否結果'}</th>
                         <th className="py-3 px-2 text-center">{lang === 'vi' ? 'Thời gian làm bài' : '受検時間'}</th>
                         <th className="py-3 px-2 text-right">{t.submittedAt}</th>
                         <th className="py-3 px-2 text-right">{lang === 'vi' ? 'Tính năng' : '操作'}</th>
@@ -1606,6 +1611,7 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                         const m = members.find(u => u.email.toLowerCase() === sub.employeeEmail.toLowerCase());
                         const userDept = m?.department || sub.employeeDepartment || 'N/A';
                         const rate = Math.round((sub.score / sub.maxScore) * 100) || 0;
+                        const isPassed = rate >= 80;
 
                         return (
                           <tr key={sub.id} className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50/50 transition font-medium">
@@ -1627,6 +1633,17 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                             <td className="py-3 px-2 text-center">
                               <span className="font-extrabold text-[#5A5A40] text-sm block">{sub.score} / {sub.maxScore}</span>
                               <span className="text-[9px] text-[#D4A373] font-bold">{rate}% đạt</span>
+                            </td>
+                            <td className="py-3 px-2 text-center whitespace-nowrap">
+                              {isPassed ? (
+                                <span className="inline-block bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-extrabold px-2 py-0.5 rounded-md shadow-xs">
+                                  {lang === 'vi' ? 'ĐẬU (PASS)' : '合格'}
+                                </span>
+                              ) : (
+                                <span className="inline-block bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-extrabold px-2 py-0.5 rounded-md shadow-xs">
+                                  {lang === 'vi' ? 'RỚT (FAIL)' : '不合格'}
+                                </span>
+                              )}
                             </td>
                             <td className="py-3 px-2 text-center">
                               <span className="font-mono bg-slate-150 border border-slate-200 text-slate-700 rounded px-1.5 py-0.5 text-[10px] font-bold">
@@ -3797,7 +3814,7 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
               <div className="border-t border-slate-200 pt-3 mt-1.5">
                 <span className="block text-[9px] text-slate-400 uppercase font-bold">{t.scoreLabel}</span>
                 <span className="text-slate-900 font-extrabold text-base">{selectedSubmission.score} / {selectedSubmission.maxScore}</span>
-                <span className="text-[#5A5A40] text-[10px] ml-1.5">({Math.round((selectedSubmission.score / selectedSubmission.maxScore) * 100) || 0}% Acc)</span>
+                <span className="text-[#5A5A40] text-[10px] ml-1.5">({Math.round((selectedSubmission.score / selectedSubmission.maxScore) * 100) || 0}%)</span>
               </div>
 
               <div className="border-t border-slate-200 pt-3 mt-1.5">

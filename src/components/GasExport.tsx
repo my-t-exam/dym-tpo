@@ -83,8 +83,8 @@ export default function GasExport({ submissions = [], lang = 'vi' }: GasExportPr
 
     // Define CSV Headers
     const headers = lang === 'vi' 
-      ? ["Thời Gian Nộp", "Họ Tên", "Email", "Bộ Phận", "Đề Thi", "Điểm Số", "Điểm Tối Đa", "Tỉ Lệ Đạt %", "Thời Gian Làm Bài", "Cách Thức Nộp"]
-      : ["提出日時", "氏名", "メールアドレス", "所属部署", "試験名", "獲得スコア", "最大スコア", "正解率 %", "解答時間", "提出方法"];
+      ? ["Thời Gian Nộp", "Họ Tên", "Email", "Bộ Phận", "Tên Team", "Đề Thi", "Điểm Số", "Điểm Tối Đa", "Tỉ Lệ Đạt %", "Thời Gian Làm Bài", "Cách Thức Nộp"]
+      : ["提出日時", "氏名", "メールアドレス", "所属部署", "チーム名", "試験名", "獲得スコア", "最大スコア", "正解率 %", "解答時間", "提出方法"];
 
     // Format rows
     const rows = listToExport.map(sub => {
@@ -99,11 +99,14 @@ export default function GasExport({ submissions = [], lang = 'vi' }: GasExportPr
         ? (lang === 'vi' ? 'Tự động (Hết giờ)' : '自動提出 (時間切れ)')
         : (lang === 'vi' ? 'Chủ động nộp' : '手動提出');
 
+      const teamName = sub.employeeTeam || 'N/A';
+
       const fields = [
-        sub.submittedAt || '',
+        formatInVietnamTime(sub.submittedAt),
         sub.employeeName || '',
         sub.employeeEmail || '',
         sub.employeeDepartment || 'N/A',
+        teamName,
         sub.examTitle || '',
         sub.score,
         sub.maxScore,

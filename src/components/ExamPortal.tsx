@@ -727,26 +727,41 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
                       <table className="w-full text-left border-collapse text-xs">
                         <thead>
                           <tr className="border-b border-[#E5E2D9] text-[#5A5A40]/80 font-bold uppercase tracking-wider text-[10px]">
-                            <th className="py-3 px-2">Exam Title</th>
+                            <th className="py-3 px-2">{lang === 'vi' ? 'Tên đề thi' : '試験名'}</th>
                             <th className="py-3 px-2 text-center">{t.scoreLabel}</th>
-                            <th className="py-3 px-2 text-center">Duration</th>
+                            <th className="py-3 px-2 text-center">{lang === 'vi' ? 'Kết quả' : '結果'}</th>
+                            <th className="py-3 px-2 text-center">{lang === 'vi' ? 'Thời gian' : '受検時間'}</th>
                             <th className="py-3 px-2 text-right">{t.submittedAt}</th>
-                            <th className="py-3 px-2 text-right">Actions</th>
+                            <th className="py-3 px-2 text-right">{lang === 'vi' ? 'Hành động' : '操作'}</th>
                           </tr>
                         </thead>
                         <tbody>
                           {mySubmissions.map((sub) => {
                             const rate = Math.round((sub.score / sub.maxScore) * 100) || 0;
+                            const isPassed = rate >= 80;
                             return (
                               <tr key={sub.id} className="border-b border-[#F0EFEA] last:border-b-0 text-slate-800 hover:bg-[#F9F8F5]/50 transition font-bold">
                                 <td className="py-3 px-2 text-[#1A1A1A] font-extrabold max-w-[200px] truncate">{sub.examTitle}</td>
-                                <td className="py-3 px-2 text-center font-black text-[#5A5A40] text-sm">{sub.score} / {sub.maxScore}</td>
+                                <td className="py-3 px-2 text-center font-black text-[#5A5A40] text-sm">{sub.score} / {sub.maxScore} <span className="text-[10px] text-slate-400 font-normal">({rate}%)</span></td>
+                                <td className="py-3 px-2 text-center">
+                                  {isPassed ? (
+                                    <span className="inline-block bg-emerald-50 text-emerald-700 border border-emerald-100 text-[10px] font-extrabold px-2 py-0.5 rounded shadow-xs">
+                                      {lang === 'vi' ? 'ĐẬU' : '合格'}
+                                    </span>
+                                  ) : (
+                                    <span className="inline-block bg-rose-50 text-rose-700 border border-rose-100 text-[10px] font-extrabold px-2 py-0.5 rounded shadow-xs">
+                                      {lang === 'vi' ? 'RỚT' : '不合格'}
+                                    </span>
+                                  )}
+                                </td>
                                 <td className="py-3 px-2 text-center">
                                   <span className="font-mono bg-slate-50 border border-slate-150 rounded px-1.5 py-0.5 text-slate-600">
                                     {sub.timeTakenSeconds ? (
-                                      `${Math.floor(sub.timeTakenSeconds / 60)}m ${sub.timeTakenSeconds % 60}s`
+                                      lang === 'vi' 
+                                        ? `${Math.floor(sub.timeTakenSeconds / 60)}p ${sub.timeTakenSeconds % 60}s`
+                                        : `${Math.floor(sub.timeTakenSeconds / 60)}分 ${sub.timeTakenSeconds % 60}秒`
                                     ) : (
-                                      'N/A'
+                                      lang === 'vi' ? 'Dưới 1 phút' : '1分未満'
                                     )}
                                   </span>
                                 </td>

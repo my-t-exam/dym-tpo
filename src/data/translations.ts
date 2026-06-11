@@ -68,7 +68,7 @@ export const translations = {
     activeMembers: "Nhân viên đăng ký",
     
     // Tab Headers in Admin
-    tabExams: "Kho Đề Thi",
+    tabExams: "Đề thi",
     tabSubmissions: "Danh Sách Kết Quả",
     tabMembers: "Phân Quyền bộ phận",
     tabSheets: "Xuất tệp Excel/CSV",
@@ -123,7 +123,7 @@ export const translations = {
   },
   ja: {
     // Top Bar & Identity Simulator
-    portalTitle: "HỆ THỐNG KIỂM TRA TPO DYM VIỆT NAM",
+    portalTitle: "DYMベトナム TPOテストシステム",
     subBranding: "DYM Vietnam • 総合自動評価パネル",
     identitySelectorLabel: "シミュレーションアカウント切替（開発テスト用）:",
     roleLabel: "ロール (職能)",

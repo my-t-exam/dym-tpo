@@ -267,8 +267,8 @@ export default function App() {
     <div className="bg-[#FDFBF7] min-h-screen flex flex-col font-sans selection:bg-[#D4A373]/30 selection:text-[#5A5A40]" id="app-root-view">
       
       {/* 2. MAIN NAV BAR GREETINGS */}
-      <nav className="bg-white/70 backdrop-blur-md text-[#1A1A1A] border-b border-[#E5E2D9] py-3 px-4 sm:px-6 lg:px-8 shadow-xs shrink-0 select-none" id="universal-nav">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+      <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-md text-[#1A1A1A] border-b border-[#E5E2D9] py-3 px-4 sm:px-6 lg:px-12 shadow-md shrink-0 select-none" id="universal-nav">
+        <div className="max-w-full w-full mx-auto flex items-center justify-between gap-4">
           
           <div className="flex items-center gap-2.5">
             <div className="w-9.5 h-9.5 bg-[#5A5A40] rounded-xl text-white flex items-center justify-center font-serif font-black text-lg select-none shadow-xs">
@@ -322,24 +322,24 @@ export default function App() {
                     : 'bg-[#5A5A40] hover:bg-[#4D4D36] text-white border-transparent shadow-xs'
                 }`}
                 id="toggle-admin-btn"
-                title={isAdminMode ? "Switch to Employee Portal" : "Switch to Admin Portal"}
+                title={isAdminMode ? (lang === 'vi' ? "Chuyển sang Cổng Nhân viên" : "社員ポータルへ切り替え") : (lang === 'vi' ? "Chuyển sang Cổng Quản lý" : "管理ポータルへ切り替え")}
               >
                 {isAdminMode ? (
                   <>
                     <User className="w-3.5 h-3.5" />
-                    Employee Portal
+                    {lang === 'vi' ? 'Cổng Nhân viên' : '社員ポータル'}
                   </>
                 ) : (
                   <>
                     <Shield className="w-3.5 h-3.5" />
-                    Management Portal
+                    {lang === 'vi' ? 'Bảng Quản lý' : '管理ポータル'}
                   </>
                 )}
               </button>
             ) : currentMember ? (
               <div className="flex items-center gap-1.5 text-slate-500 bg-slate-100/80 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold border border-slate-200">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
-                <span>Mode: Employee</span>
+                <span>{lang === 'vi' ? 'Quyền: Nhân viên' : '権限: 一般社員'}</span>
               </div>
             ) : null}
 
@@ -348,10 +348,10 @@ export default function App() {
               <button
                 onClick={handleLogout}
                 className="flex items-center gap-1 px-3 py-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-100 rounded-lg text-xs font-bold transition cursor-pointer font-sans"
-                title="Log out"
+                title={lang === 'vi' ? "Đăng xuất" : "ログアウト"}
               >
                 <LogOut className="w-3.5 h-3.5" />
-                <span className="hidden md:inline">Logout</span>
+                <span className="hidden md:inline">{lang === 'vi' ? 'Đăng xuất' : 'ログアウト'}</span>
               </button>
             )}
           </div>
@@ -493,7 +493,7 @@ export default function App() {
                 {/* Simulated Greeting Text banner */}
                 {currentMember && (
                   <p className="text-[#F5EBE0] text-xs sm:text-sm font-bold font-mono tracking-wider bg-black/25 px-5 py-2 rounded-full w-max mx-auto border border-white/15">
-                    {lang === 'vi' ? 'Chào nhân viên: ' : 'Chào nhân viên (社員): '}
+                    {lang === 'vi' ? 'Chào nhân viên: ' : 'ようこそ、社員: '}
                     <span className="font-serif italic underline text-white font-extrabold text-sm sm:text-base">{currentMember.name}</span> 
                     {` (${currentMember.department})`}
                   </p>
