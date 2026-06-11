@@ -90,6 +90,8 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
   const [newTeamDept, setNewTeamDept] = useState(currentMember?.role === 'admin' ? currentMember.department : (getStoredDepartments()[0] || 'IT部'));
   const [newMemberTeam, setNewMemberTeam] = useState('');
   const [memberListTeamFilter, setMemberListTeamFilter] = useState('all');
+  const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
+  const [memberRoleFilter, setMemberRoleFilter] = useState<'all' | 'superadmin' | 'admin' | 'member'>('all');
 
   // Detailed Submission Modal View
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
@@ -821,6 +823,137 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
     });
   };
 
+  // Change multiple members' departments
+  const handleBulkChangeDept = (newDept: string) => {
+    if (!currentMember || currentMember.role !== 'superadmin') {
+      setCustomModal({
+        type: 'alert',
+        titleVi: 'Không thể thực hiện',
+        titleJa: '操作を受理できません',
+        messageVi: 'Chỉ có Super Admin mới có quyền đổi Bộ phận hàng loạt.',
+        messageJa: '部署の一括変更権限はスーパー管理者のみ有します。'
+      });
+      return;
+    }
+
+    const executeBulkDept = () => {
+      const stored = getStoredMembers();
+      const updated = stored.map(m => {
+        if (selectedMemberIds.includes(m.id)) {
+          return { ...m, department: newDept, team: '' }; // reset team as team belongs to dept
+        }
+        return m;
+      });
+      localStorage.setItem('tpo_portal_members', JSON.stringify(updated));
+      if (onMembersChange) {
+        onMembersChange(updated);
+      }
+      setSelectedMemberIds([]);
+      setCustomModal({
+        type: 'alert',
+        titleVi: 'Thành Công',
+        titleJa: '完了しました',
+        messageVi: `Đã cập nhật Phòng ban thành công cho ${selectedMemberIds.length} nhân sự.`,
+        messageJa: `${selectedMemberIds.length}件の部署更新を一括処理しました。`
+      });
+    };
+
+    setCustomModal({
+      type: 'confirm',
+      titleVi: 'Xác Nhận Đổi Bộ Phận Hàng Loạt',
+      titleJa: '一括部署変更の確認',
+      messageVi: `Bạn có chắc chắn muốn chuyển ${selectedMemberIds.length} nhân sự sang phòng ban "${newDept}" không?`,
+      messageJa: `選択した ${selectedMemberIds.length} 名の部署を一括して "${newDept}" に変更しますか？`,
+      onConfirm: executeBulkDept
+    });
+  };
+
+  // Change multiple members' teams
+  const handleBulkChangeTeam = (newTeam: string) => {
+    if (!currentMember || (currentMember.role !== 'superadmin' && currentMember.role !== 'admin')) {
+      return;
+    }
+
+    const executeBulkTeam = () => {
+      const stored = getStoredMembers();
+      const updated = stored.map(m => {
+        if (selectedMemberIds.includes(m.id)) {
+          // Extra security guard in case Admin is editing
+          if (currentMember.role === 'admin' && m.department.toLowerCase().trim() !== currentMember.department.toLowerCase().trim()) {
+            return m; // unchanged if outside scope
+          }
+          return { ...m, team: newTeam || undefined };
+        }
+        return m;
+      });
+      localStorage.setItem('tpo_portal_members', JSON.stringify(updated));
+      if (onMembersChange) {
+        onMembersChange(updated);
+      }
+      setSelectedMemberIds([]);
+      setCustomModal({
+        type: 'alert',
+        titleVi: 'Thành Công',
+        titleJa: '完了しました',
+        messageVi: `Đã cập nhật Team thành công cho các nhân sự đã chọn.`,
+        messageJa: `対象受験者のチームを一括変更しました。`
+      });
+    };
+
+    setCustomModal({
+      type: 'confirm',
+      titleVi: 'Xác Nhận Đổi Nhóm Hàng Loạt',
+      titleJa: '一括チーム変更の確認',
+      messageVi: `Bạn có chắc chắn muốn cập nhật Team thành "${newTeam || 'Không phân nhóm'}" cho ${selectedMemberIds.length} nhân sự không?`,
+      messageJa: `選択した ${selectedMemberIds.length} 名のチームを一括して "${newTeam || '未所属'}" に更新しますか？`,
+      onConfirm: executeBulkTeam
+    });
+  };
+
+  // Bulk Delete
+  const handleBulkDelete = () => {
+    if (!currentMember || (currentMember.role !== 'superadmin' && currentMember.role !== 'admin')) {
+      return;
+    }
+
+    const executeBulkDel = () => {
+      const stored = getStoredMembers();
+      // Keep only those that are NOT in selection (and secure that isSelf is guarded or admin filters own department only)
+      const updated = stored.filter(m => {
+        if (m.email.toLowerCase().trim() === currentMember.email.toLowerCase().trim()) return true; // guard self
+        if (selectedMemberIds.includes(m.id)) {
+          if (currentMember.role === 'admin' && m.department.toLowerCase().trim() !== currentMember.department.toLowerCase().trim()) {
+            return true; // guard outside department delete for Admins
+          }
+          return false; // deleted
+        }
+        return true; // kept
+      });
+
+      localStorage.setItem('tpo_portal_members', JSON.stringify(updated));
+      if (onMembersChange) {
+        onMembersChange(updated);
+      }
+      setSelectedMemberIds([]);
+      setCustomModal({
+        type: 'alert',
+        titleVi: 'Thành Công',
+        titleJa: '完了しました',
+        messageVi: 'Đã xóa hàng loạt nhân viên được chọn thành công.',
+        messageJa: '選択されたメンバーを一括削除しました。'
+      });
+    };
+
+    setCustomModal({
+      type: 'confirm',
+      titleVi: 'Cảnh Báo Xóa Hàng Loạt!',
+      titleJa: '一括削除の重大な警告！',
+      messageVi: `Hành động này sẽ XÓA VĨNH VIỄN ${selectedMemberIds.length} nhân sự khỏi hệ thống bao gồm thông tin cá nhân. Bạn có chắc chắn muốn tiến hành?`,
+      messageJa: `選択した ${selectedMemberIds.length} 名をシステムから完全に削除してよろしいですか？払い戻し不可能なアクションです。`,
+      onConfirm: executeBulkDel
+    });
+  };
+
   // Remove member completely from database
   const handleDeleteMember = (memberId: string) => {
     if (!currentMember || (currentMember.role !== 'superadmin' && currentMember.role !== 'admin')) {
@@ -995,64 +1128,94 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
         <div className="space-y-8 animate-in fade-in duration-200">
           
           {/* STATS WIDGETS */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4" id="overview-stats-grid">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3" id="overview-stats-grid">
             
-            <div className="bg-white border border-slate-200 p-5 rounded-xl shadow-xs">
-              <span className="text-[10px] text-slate-400 font-bold tracking-wider block uppercase">{t.totalExams}</span>
-              <span className="text-2xl font-black text-[#5A5A40] block mt-1 font-serif italic">{exams.length}</span>
+            <div className="bg-white border border-slate-150 py-2.5 px-4 rounded-xl shadow-xs flex items-center justify-between gap-3 hover:shadow-sm transition-all duration-300">
+              <div>
+                <span className="text-[10px] text-slate-400 font-bold tracking-wider block uppercase">{t.totalExams}</span>
+                <span className="text-xl font-extrabold text-[#5A5A40] block font-serif leading-none mt-0.5">{exams.length}</span>
+              </div>
+              <div className="w-8 h-8 rounded-lg bg-[#5A5A40]/10 flex items-center justify-center text-[#5A5A40]">
+                <Clipboard className="w-4 h-4" />
+              </div>
             </div>
 
-            <div className="bg-white border border-slate-200 p-5 rounded-xl shadow-xs">
-              <span className="text-[10px] text-slate-400 font-bold tracking-wider block uppercase">{t.totalSubmissions}</span>
-              <span className="text-2xl font-black text-[#5A5A40] block mt-1 font-serif italic">{submissions.length}</span>
+            <div className="bg-white border border-slate-150 py-2.5 px-4 rounded-xl shadow-xs flex items-center justify-between gap-3 hover:shadow-sm transition-all duration-300">
+              <div>
+                <span className="text-[10px] text-slate-400 font-bold tracking-wider block uppercase">{t.totalSubmissions}</span>
+                <span className="text-xl font-extrabold text-[#5A5A40] block font-serif leading-none mt-0.5">{submissions.length}</span>
+              </div>
+              <div className="w-8 h-8 rounded-lg bg-[#5A5A40]/10 flex items-center justify-center text-[#5A5A40]">
+                <UserCheck className="w-4 h-4" />
+              </div>
             </div>
 
-            <div className="bg-white border border-slate-200 p-5 rounded-xl shadow-xs">
-              <span className="text-[10px] text-slate-400 font-bold tracking-wider block uppercase">{t.activeMembers}</span>
-              <span className="text-2xl font-black text-[#5A5A40] block mt-1 font-serif italic">{members.length}</span>
+            <div className="bg-white border border-slate-150 py-2.5 px-4 rounded-xl shadow-xs flex items-center justify-between gap-3 hover:shadow-sm transition-all duration-300">
+              <div>
+                <span className="text-[10px] text-slate-400 font-bold tracking-wider block uppercase">{t.activeMembers}</span>
+                <span className="text-xl font-extrabold text-[#5A5A40] block font-serif leading-none mt-0.5">{members.length}</span>
+              </div>
+              <div className="w-8 h-8 rounded-lg bg-[#5A5A40]/10 flex items-center justify-center text-[#5A5A40]">
+                <Users className="w-4 h-4" />
+              </div>
             </div>
 
           </div>
 
-          {/* INNER TAB SHIFT BUTTONS */}
-          <div className="flex border-b border-slate-200">
-            <button
-              onClick={() => setActiveTab('exams')}
-              className={`px-5 py-3 text-xs font-bold border-b-2 transition ${activeTab === 'exams' ? 'border-[#5A5A40] text-[#5A5A40]' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
-              id="tab-exams"
-            >
-              {t.tabExams} ({exams.length})
-            </button>
-            <button
-              onClick={() => setActiveTab('submissions')}
-              className={`px-5 py-3 text-xs font-bold border-b-2 transition ${activeTab === 'submissions' ? 'border-[#5A5A40] text-[#5A5A40]' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
-              id="tab-submissions"
-            >
-              {t.tabSubmissions} ({submissions.length})
-            </button>
-            <button
-              onClick={() => setActiveTab('dashboard')}
-              className={`px-5 py-3 text-xs font-bold border-b-2 transition ${activeTab === 'dashboard' ? 'border-[#5A5A40] text-[#5A5A40]' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
-              id="tab-dashboard"
-            >
-              📊 {lang === 'vi' ? 'Dashboard Tiến Độ' : '進捗ダッシュボード'}
-            </button>
-            {(currentMember?.role === 'superadmin' || currentMember?.role === 'admin') && (
+          {/* STICKY TAB CONTAINER */}
+          <div className="sticky top-0 z-20 backdrop-blur-md bg-[#FDFBF7]/95 border-b border-slate-200 py-2 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 flex items-center justify-between gap-4 overflow-x-auto shadow-xs">
+            <div className="flex items-center space-x-1 min-w-max">
               <button
-                onClick={() => setActiveTab('members')}
-                className={`px-5 py-3 text-xs font-bold border-b-2 transition ${activeTab === 'members' ? 'border-[#5A5A40] text-[#5A5A40]' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
-                id="tab-members"
+                onClick={() => setActiveTab('exams')}
+                className={`px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${activeTab === 'exams' ? 'bg-[#5A5A40] text-white shadow-sm' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'}`}
+                id="tab-exams"
               >
-                {t.tabMembers} ({members.length})
+                <Clipboard className="w-3.5 h-3.5" />
+                {t.tabExams} ({exams.length})
               </button>
-            )}
-            <button
-              onClick={() => setActiveTab('audit')}
-              className={`px-5 py-3 text-xs font-bold border-b-2 transition ${activeTab === 'audit' ? 'border-[#5A5A40] text-[#5A5A40]' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
-              id="tab-audit-logs"
-            >
-              📋 {lang === 'vi' ? 'Lịch sử hệ thống' : 'システム活動ログ'}
-            </button>
+              <button
+                onClick={() => setActiveTab('submissions')}
+                className={`px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${activeTab === 'submissions' ? 'bg-[#5A5A40] text-white shadow-sm' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'}`}
+                id="tab-submissions"
+              >
+                <UserCheck className="w-3.5 h-3.5" />
+                {t.tabSubmissions} ({submissions.length})
+              </button>
+              <button
+                onClick={() => setActiveTab('dashboard')}
+                className={`px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${activeTab === 'dashboard' ? 'bg-[#5A5A40] text-white shadow-sm' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'}`}
+                id="tab-dashboard"
+              >
+                <span>📊</span>
+                {lang === 'vi' ? 'Dashboard Tiến Độ' : '進捗ダッシュボード'}
+              </button>
+              {(currentMember?.role === 'superadmin' || currentMember?.role === 'admin') && (
+                <button
+                  onClick={() => setActiveTab('members')}
+                  className={`px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${activeTab === 'members' ? 'bg-[#5A5A40] text-white shadow-sm' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'}`}
+                  id="tab-members"
+                >
+                  <Users className="w-3.5 h-3.5" />
+                  {t.tabMembers} ({members.length})
+                </button>
+              )}
+              <button
+                onClick={() => setActiveTab('audit')}
+                className={`px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${activeTab === 'audit' ? 'bg-[#5A5A40] text-white shadow-sm' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'}`}
+                id="tab-audit-logs"
+              >
+                <span>📋</span>
+                {lang === 'vi' ? 'Lịch sử hệ thống' : 'システム活動ログ'}
+              </button>
+            </div>
+            
+            <div className="hidden lg:flex items-center gap-3.5 text-[11px] font-bold text-[#5A5A40] min-w-max bg-[#5A5A40]/5 px-3 py-1 rounded-full border border-[#5A5A40]/10 select-none">
+              <span className="flex items-center gap-1">📝 {exams.length} đề</span>
+              <span className="text-slate-300">|</span>
+              <span className="flex items-center gap-1">👥 {members.length} nhân sự</span>
+              <span className="text-slate-300">|</span>
+              <span className="flex items-center gap-1">📥 {submissions.length} bài nộp</span>
+            </div>
           </div>
 
           {/* TAB CONTENT: EXAMS MANAGER */}
@@ -1220,6 +1383,42 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                                   Team: {ex.team}
                                 </span>
                               )}
+                              {(() => {
+                                const now = Date.now();
+                                const start = new Date(ex.startTime).getTime();
+                                const end = new Date(ex.endTime).getTime();
+                                if (now < start) {
+                                  return (
+                                    <span className="bg-slate-100 text-slate-600 border border-slate-200 text-[9px] uppercase font-extrabold px-2 py-0.5 rounded flex items-center gap-1 shrink-0">
+                                      <span className="w-1 bg-slate-400 h-1 rounded-full"></span>
+                                      {lang === 'vi' ? 'Sắp mở' : '配信予定'}
+                                    </span>
+                                  );
+                                } else if (now >= start && now <= end) {
+                                  const hoursRemaining = (end - now) / (1000 * 60 * 60);
+                                  if (hoursRemaining <= 24) {
+                                    return (
+                                      <span className="bg-amber-50 text-amber-700 border border-amber-200 text-[9px] uppercase font-extrabold px-2 py-0.5 rounded flex items-center gap-1 shrink-0 animate-pulse">
+                                        <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-ping"></span>
+                                        {lang === 'vi' ? '🟡 Sắp đóng (<24h)' : 'まもなく終了'}
+                                      </span>
+                                    );
+                                  }
+                                  return (
+                                    <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[9px] uppercase font-extrabold px-2 py-0.5 rounded flex items-center gap-1 shrink-0">
+                                      <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping"></span>
+                                      {lang === 'vi' ? '🟢 Đang mở' : '受検可能'}
+                                    </span>
+                                  );
+                                } else {
+                                  return (
+                                    <span className="bg-rose-50 text-rose-700 border border-rose-250 text-[9px] uppercase font-extrabold px-2 py-0.5 rounded flex items-center gap-1 shrink-0">
+                                      <span className="w-1 bg-rose-500 h-1 bg-rose-500 rounded-full"></span>
+                                      {lang === 'vi' ? '🔴 Đã đóng' : '終了'}
+                                    </span>
+                                  );
+                                }
+                              })()}
                             </div>
                             <p className="text-slate-500 text-[11px] line-clamp-1">{ex.description || 'No description provided'}</p>
                             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-slate-500 pt-2 font-medium">
@@ -1997,8 +2196,34 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                   )}
                 </div>
 
+                {/* ROLE QUICK-FILTERS (LỌC QUYỀN TRỰC TIẾP) */}
+                <div className="flex items-center gap-1.5 flex-wrap bg-slate-50 border border-slate-150 p-2 rounded-xl">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 mr-2 ml-1">
+                    {lang === 'vi' ? 'Filter quyền:' : '権限フィルター:'}
+                  </span>
+                  {[
+                    { value: 'all', labelVi: 'Tất cả', labelJa: 'すべて' },
+                    { value: 'superadmin', labelVi: 'Super Admin', labelJa: 'Super Admin' },
+                    { value: 'admin', labelVi: 'Admin', labelJa: 'Admin' },
+                    { value: 'member', labelVi: 'Nhân viên', labelJa: '一般社員' },
+                  ].map(opt => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setMemberRoleFilter(opt.value as any)}
+                      className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold border transition cursor-pointer ${
+                        memberRoleFilter === opt.value
+                          ? 'bg-[#5A5A40] text-white border-[#5A4A40] shadow-xs'
+                          : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                      }`}
+                    >
+                      {lang === 'vi' ? opt.labelVi : opt.labelJa}
+                    </button>
+                  ))}
+                </div>
+
                 {/* LIST EMPLOYEES CONTAINER */}
-                <div className="space-y-2.5 max-h-[480px] overflow-y-auto pr-1">
+                <div className="space-y-4 max-h-[580px] overflow-y-auto pr-1">
                   {(() => {
                     const getRoleWeight = (role: string): number => {
                       if (role === 'superadmin') return 100;
@@ -2027,6 +2252,11 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                       }
                     }
 
+                    // 1c. Apply Role Filter (Lọc quyền trực tiếp)
+                    if (memberRoleFilter !== 'all') {
+                      baseList = baseList.filter(m => m.role === memberRoleFilter);
+                    }
+
                     // 2. Search query filter
                     const filteredAndSortedMembers = baseList.filter(m => {
                       if (!searchMemberQuery.trim()) return true;
@@ -2039,6 +2269,18 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                       return a.name.localeCompare(b.name, 'vi');
                     });
 
+                    // Compute selectable members in this filtered view (cannot select self)
+                    const selectableInList = filteredAndSortedMembers.filter(m => {
+                      const isSelf = m.email.toLowerCase().trim() === currentMember?.email?.toLowerCase().trim();
+                      if (isSelf) return false;
+                      // Superadmin can edit anyone else. Admin can edit members of their department who are member.
+                      if (currentMember?.role === 'superadmin') return true;
+                      if (currentMember?.role === 'admin' && m.role === 'member') return true;
+                      return false;
+                    });
+
+                    const isAllSelected = selectableInList.length > 0 && selectableInList.every(m => selectedMemberIds.includes(m.id));
+
                     if (filteredAndSortedMembers.length === 0) {
                       return (
                         <div className="text-center py-12 text-slate-400 text-xs">
@@ -2048,139 +2290,268 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                     }
 
                     return (
-                      <div className="space-y-2.5">
-                        <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider flex justify-between">
-                          <span>{lang === 'vi' ? 'NHÂN VIÊN ĐANG HIỂN THỊ' : '表示中メンバー'}</span>
-                          <span>{filteredAndSortedMembers.length} {lang === 'vi' ? 'nhân viên' : '名'}</span>
+                      <div className="space-y-4">
+                        {/* SELECT ALL CONTROLS GRID */}
+                        <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 bg-slate-50 p-2.5 rounded-lg border border-slate-150 flex-wrap gap-2 select-none">
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={isAllSelected}
+                              disabled={selectableInList.length === 0}
+                              onChange={() => {
+                                const selectableIds = selectableInList.map(item => item.id);
+                                if (isAllSelected) {
+                                  setSelectedMemberIds(prev => prev.filter(id => !selectableIds.includes(id)));
+                                } else {
+                                  setSelectedMemberIds(prev => Array.from(new Set([...prev, ...selectableIds])));
+                                }
+                              }}
+                              className="rounded border-slate-300 text-[#5A5A40] focus:ring-[#5A5A40] w-4 h-4 cursor-pointer accent-[#5A5A40]"
+                            />
+                            <span className="text-slate-700">{lang === 'vi' ? 'Chọn tất cả hiển thị' : '対象をすべて選択'}</span>
+                          </label>
+
+                          <span className="text-slate-400 font-semibold">
+                            {lang === 'vi' ? `Kênh lọc: ` : `フィルター結果: `}
+                            <strong className="text-slate-700">{filteredAndSortedMembers.length} {lang === 'vi' ? 'nhân viên' : '名'}</strong>
+                            {selectedMemberIds.length > 0 && (
+                              <span className="bg-[#5A5A40]/10 text-[#5A5A40] text-[10px] px-2 py-0.5 rounded ml-2 font-black">
+                                {lang === 'vi' ? `Đang chọn ${selectedMemberIds.length}` : `${selectedMemberIds.length} 未受験者を選択中`}
+                              </span>
+                            )}
+                          </span>
                         </div>
-                        
-                        {filteredAndSortedMembers.map((m) => {
-                          const isSelf = m.email.toLowerCase().trim() === currentMember?.email?.toLowerCase().trim();
-                          const isSuper = m.role === 'superadmin';
-                          const isAdmin = m.role === 'admin';
-                          
-                          // Super admin can delete anyone but themselves. 
-                          // Admin can delete members in their department who are NOT superadmin/admin.
-                          const canDeleteMember = currentMember?.role === 'superadmin' 
-                            ? !isSelf 
-                            : (currentMember?.role === 'admin' && m.role === 'member');
-                            
-                          const canChangeMemberRole = currentMember?.role === 'superadmin';
-                          const canChangeMemberDept = currentMember?.role === 'superadmin';
-                          const canChangeMemberTeam = currentMember?.role === 'superadmin' || 
-                            (currentMember?.role === 'admin' && m.department.toLowerCase().trim() === currentMember.department.toLowerCase().trim());
 
-                          return (
-                            <div key={m.id} className="p-3 border border-slate-150 rounded-lg bg-slate-50/30 hover:bg-slate-50 transition flex items-center justify-between text-xs font-semibold gap-3">
-                              <div className="min-w-0 flex-1">
-                                <div className="flex items-center gap-1.5 flex-wrap">
-                                  <span className="font-bold text-slate-900 text-sm truncate">{m.name}</span>
-                                  {isSelf && (
-                                    <span className="bg-blue-50 text-blue-700 text-[9px] font-bold px-1.5 py-0.2 rounded-full border border-blue-100 uppercase">
-                                      {lang === 'vi' ? 'Bạn' : '自分'}
-                                    </span>
-                                  )}
-                                  <span className="bg-slate-100 text-[#5A5A40] border border-slate-200 text-[9px] px-2 py-0.5 rounded-full font-bold">
-                                    {m.department}
-                                  </span>
-                                  {m.team && (
-                                    <span className="bg-[#D4A373]/10 text-[#5A5A40] border border-[#D4A373]/25 text-[9px] px-2 py-0.5 rounded-full font-bold">
-                                      {m.team}
-                                    </span>
-                                  )}
-                                </div>
-                                <span className="text-slate-400 text-[10px] block truncate">{m.email}</span>
-                                
-                                <div className="mt-1 flex items-center gap-1.5">
-                                  <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded uppercase ${
-                                    isSuper ? 'bg-red-50 text-red-700 border border-red-200' : isAdmin ? 'bg-yellow-50 text-amber-700 border border-yellow-200' : 'bg-green-50 text-emerald-700 border border-green-200'
-                                  }`}>
-                                    {m.role === 'superadmin' ? 'Super Admin' : m.role === 'admin' ? 'Admin' : 'Member'}
-                                  </span>
-                                </div>
-                              </div>
-
-                              <div className="flex items-center gap-1.5 shrink-0 flex-wrap sm:flex-nowrap">
-                                {/* Department selector (Super Admin only can edit, Admin cannot) */}
-                                <select
-                                  value={m.department}
-                                  disabled={!canChangeMemberDept}
-                                  onChange={(e) => handleUpdateMemberDept(m.id, e.target.value)}
-                                  className="bg-white border border-slate-200 rounded px-2 py-1 text-[11px] font-bold text-slate-700 outline-none disabled:opacity-60 cursor-pointer disabled:cursor-not-allowed"
-                                >
-                                  {departmentsList.map(dept => (
-                                    <option key={dept} value={dept}>{dept}</option>
-                                  ))}
-                                </select>
-
-                                {/* Team selector (Admin of of his dept & Superadmin can edit) */}
-                                <select
-                                  value={m.team || ''}
-                                  disabled={!canChangeMemberTeam}
-                                  onChange={(e) => {
-                                    const nextTeam = e.target.value;
-                                    const storedAll = getStoredMembers();
-                                    const updated = storedAll.map(member => {
-                                      if (member.id === m.id) {
-                                        return { ...member, team: nextTeam || undefined };
-                                      }
-                                      return member;
-                                    });
-                                    saveMembers(updated);
-
-                                    addAuditLog(
-                                      lang === 'vi' ? 'Cập nhật nhóm' : 'メンバーチーム更新',
-                                      currentMember?.name || 'Unknown',
-                                      currentMember?.email || 'unknown@dymvietnam.net',
-                                      lang === 'vi' 
-                                        ? `Đã thay đổi nhóm của nhân viên "${m.name}" (${m.email}) thành "${nextTeam || 'Không có nhóm'}"`
-                                        : `メンバー "${m.name}" (${m.email}) のチームを "${nextTeam || 'チームなし'}" に更新しました`
-                                    );
-                                    setAuditLogs(getStoredAuditLogs());
-
-                                    if (onMembersChange) {
-                                      onMembersChange(updated);
-                                    }
-                                    if (currentMember?.role === 'admin') {
-                                      setMembers(updated.filter(me => me.department.toLowerCase().trim() === currentMember.department.toLowerCase().trim()));
-                                    } else {
-                                      setMembers(updated);
-                                    }
-                                  }}
-                                  className="bg-white border border-slate-200 rounded px-2 py-1 text-[11px] font-bold text-slate-700 outline-none disabled:opacity-60 cursor-pointer disabled:cursor-not-allowed"
-                                >
-                                  <option value="">{lang === 'vi' ? '--- Chọn Team ---' : '--- Team無し ---'}</option>
-                                  {(deptTeams[m.department] || []).map(tName => (
-                                    <option key={tName} value={tName}>{tName}</option>
-                                  ))}
-                                </select>
-
-                                {/* Role selector (Super Admin only can edit, Admin cannot) */}
-                                <select
-                                  value={m.role}
-                                  disabled={!canChangeMemberRole}
-                                  onChange={(e) => handleUpdateMemberRole(m.id, e.target.value as 'superadmin' | 'admin' | 'member')}
-                                  className="bg-white border border-slate-205 rounded px-2 py-1 text-[11px] font-bold text-slate-700 outline-none disabled:opacity-60 cursor-pointer disabled:cursor-not-allowed"
-                                >
-                                  <option value="member">{lang === 'vi' ? 'Member' : '一般'}</option>
-                                  <option value="admin">{lang === 'vi' ? 'Admin' : '管理者'}</option>
-                                  <option value="superadmin">{lang === 'vi' ? 'Super Admin' : '最高特権'}</option>
-                                </select>
-
-                                {/* Delete member button */}
-                                {canDeleteMember && (
-                                  <button
-                                    onClick={() => handleDeleteMember(m.id)}
-                                    className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition cursor-pointer"
-                                    title={lang === 'vi' ? 'Xóa nhân viên' : '社員アカウントを削除'}
-                                  >
-                                    <Trash className="w-4 h-4" />
-                                  </button>
-                                )}
+                        {/* BULK ACTION HEAD-UP CONSOLE HUD */}
+                        {selectedMemberIds.length > 0 && (
+                          <div className="bg-amber-50/50 border border-amber-200/65 p-3 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-3 animate-in slide-in-from-top-2 duration-200 shadow-xs">
+                            <div className="flex items-center gap-2 self-start sm:self-auto">
+                              <span className="text-base text-amber-500">⚡</span>
+                              <div>
+                                <span className="text-xs font-black text-slate-800 block">
+                                  {lang === 'vi' ? `Hành động hàng loạt (${selectedMemberIds.length} nhân sự)` : `一括アクション (${selectedMemberIds.length} 名選択中)`}
+                                </span>
+                                <span className="text-[10px] text-slate-400 block font-semibold">
+                                  {lang === 'vi' ? 'Đổi bộ phận, team hoặc xóa vĩnh viễn' : '選択したメンバーの部署、チーム変更または一括削除'}
+                                </span>
                               </div>
                             </div>
-                          );
-                        })}
+
+                            <div className="flex items-center gap-2 flex-wrap justify-end w-full sm:w-auto">
+                              {/* Bulk Change Department (Superadmin Only) */}
+                              {currentMember?.role === 'superadmin' && (
+                                <select
+                                  onChange={(e) => {
+                                    if (e.target.value) {
+                                      handleBulkChangeDept(e.target.value);
+                                      e.target.value = '';
+                                    }
+                                  }}
+                                  className="bg-white border border-slate-200 text-[10px] font-bold py-1.5 px-2 rounded-lg cursor-pointer max-w-[130px] outline-none shadow-xs"
+                                >
+                                  <option value="">{lang === 'vi' ? '--- Đổi bộ phận ---' : '--- 部署の一括変更 ---'}</option>
+                                  {departmentsList.map(d => (
+                                    <option key={d} value={d}>{d}</option>
+                                  ))}
+                                </select>
+                              )}
+
+                              {/* Bulk Change Team */}
+                              <select
+                                onChange={(e) => {
+                                  handleBulkChangeTeam(e.target.value);
+                                  e.target.value = '';
+                                }}
+                                className="bg-white border border-slate-200 text-[10px] font-bold py-1.5 px-2 rounded-lg cursor-pointer max-w-[130px] outline-none shadow-xs"
+                              >
+                                <option value="">{lang === 'vi' ? '--- Đổi nhóm ---' : '--- チームの一括変更 ---'}</option>
+                                <option value="clear">{lang === 'vi' ? 'Không phân nhóm' : 'チーム未所属'}</option>
+                                {(() => {
+                                  // Gather unique teams based on department restriction
+                                  const allPossibleTeams = currentMember?.role === 'admin'
+                                    ? (deptTeams[currentMember.department] || [])
+                                    : Array.from(new Set(Object.values(deptTeams).flat()));
+                                  return allPossibleTeams.map(team => (
+                                    <option key={team} value={team}>{team}</option>
+                                  ));
+                                })()}
+                              </select>
+
+                              {/* Bulk Delete */}
+                              <button
+                                type="button"
+                                onClick={handleBulkDelete}
+                                className="bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-[10px] py-1.5 px-3 rounded-lg flex items-center gap-1 cursor-pointer transition shadow-xs"
+                              >
+                                {lang === 'vi' ? 'Xóa hàng loạt' : '一括削除'}
+                              </button>
+
+                              {/* Clear Selection */}
+                              <button
+                                type="button"
+                                onClick={() => setSelectedMemberIds([])}
+                                className="bg-slate-200 hover:bg-slate-300 text-slate-600 font-extrabold text-[10px] py-1.5 px-2.5 rounded-lg cursor-pointer transition"
+                              >
+                                {lang === 'vi' ? 'Hủy' : 'クリア'}
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* LIST ROW ITERATION */}
+                        <div className="space-y-2">
+                          {filteredAndSortedMembers.map((m) => {
+                            const isSelf = m.email.toLowerCase().trim() === currentMember?.email?.toLowerCase().trim();
+                            const isSuper = m.role === 'superadmin';
+                            const isAdmin = m.role === 'admin';
+                            
+                            // Super admin can delete anyone but themselves. 
+                            // Admin can delete members in their department who are NOT superadmin/admin.
+                            const canDeleteMember = currentMember?.role === 'superadmin' 
+                              ? !isSelf 
+                              : (currentMember?.role === 'admin' && m.role === 'member');
+                              
+                            const canChangeMemberRole = currentMember?.role === 'superadmin';
+                            const canChangeMemberDept = currentMember?.role === 'superadmin';
+                            const canChangeMemberTeam = currentMember?.role === 'superadmin' || 
+                              (currentMember?.role === 'admin' && m.department.toLowerCase().trim() === currentMember.department.toLowerCase().trim());
+
+                            // Row selectable check
+                            const isSelectable = !isSelf && (currentMember?.role === 'superadmin' || (currentMember?.role === 'admin' && m.role === 'member'));
+                            const isChecked = selectedMemberIds.includes(m.id);
+
+                            return (
+                              <div key={m.id} className={`p-3 border rounded-lg transition flex items-center justify-between text-xs font-semibold gap-3 ${
+                                isChecked ? 'bg-amber-50/15 border-amber-300/80 shadow-xs' : 'border-slate-150 bg-slate-50/30 hover:bg-slate-50'
+                              }`}>
+                                
+                                <div className="flex items-center gap-3 min-w-0 flex-1">
+                                  {/* Item Selection Checkbox */}
+                                  <input
+                                    type="checkbox"
+                                    checked={isChecked}
+                                    disabled={!isSelectable}
+                                    onChange={() => {
+                                      if (isChecked) {
+                                        setSelectedMemberIds(prev => prev.filter(id => id !== m.id));
+                                      } else {
+                                        setSelectedMemberIds(prev => [...prev, m.id]);
+                                      }
+                                    }}
+                                    className={`rounded border-slate-300 text-[#5A5A40] focus:ring-[#5A5A40] w-4 h-4 cursor-pointer accent-[#5A5A40] shrink-0 disabled:opacity-30 disabled:cursor-not-allowed`}
+                                  />
+
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                      <span className="font-extrabold text-slate-950 text-sm truncate">{m.name}</span>
+                                      {isSelf && (
+                                        <span className="bg-blue-50 text-blue-700 text-[9px] font-black px-1.5 py-0.2 rounded-full border border-blue-100 uppercase">
+                                          {lang === 'vi' ? 'Bạn' : '自分'}
+                                        </span>
+                                      )}
+                                      <span className="bg-slate-100 text-[#5A5A40] border border-slate-200 text-[9px] px-2 py-0.5 rounded-full font-bold">
+                                        {m.department}
+                                      </span>
+                                      {m.team && (
+                                        <span className="bg-[#D4A373]/10 text-[#5A5A40] border border-[#D4A373]/25 text-[9px] px-2 py-0.5 rounded-full font-bold">
+                                          {m.team}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <span className="text-slate-400 text-[10px] block truncate font-medium mt-0.5">{m.email}</span>
+                                    
+                                    <div className="mt-1 flex items-center gap-1.5">
+                                      <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded uppercase ${
+                                        isSuper ? 'bg-red-50 text-red-700 border border-red-200' : isAdmin ? 'bg-yellow-50 text-amber-700 border border-yellow-200' : 'bg-green-50 text-emerald-700 border border-green-200'
+                                      }`}>
+                                        {m.role === 'superadmin' ? 'Super Admin' : m.role === 'admin' ? 'Admin' : 'Member'}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-1.5 shrink-0 flex-wrap sm:flex-nowrap">
+                                  {/* Department selector (Super Admin only can edit, Admin cannot) */}
+                                  <select
+                                    value={m.department}
+                                    disabled={!canChangeMemberDept}
+                                    onChange={(e) => handleUpdateMemberDept(m.id, e.target.value)}
+                                    className="bg-white border border-slate-200 rounded px-2 py-1 text-[11px] font-bold text-slate-700 outline-none disabled:opacity-60 cursor-pointer disabled:cursor-not-allowed"
+                                  >
+                                    {departmentsList.map(dept => (
+                                      <option key={dept} value={dept}>{dept}</option>
+                                    ))}
+                                  </select>
+
+                                  {/* Team selector (Admin of of his dept & Superadmin can edit) */}
+                                  <select
+                                    value={m.team || ''}
+                                    disabled={!canChangeMemberTeam}
+                                    onChange={(e) => {
+                                      const nextTeam = e.target.value;
+                                      const storedAll = getStoredMembers();
+                                      const updated = storedAll.map(member => {
+                                        if (member.id === m.id) {
+                                          return { ...member, team: nextTeam || undefined };
+                                        }
+                                        return member;
+                                      });
+                                      saveMembers(updated);
+
+                                      addAuditLog(
+                                        lang === 'vi' ? 'Cập nhật nhóm' : 'メンバーチーム更新',
+                                        currentMember?.name || 'Unknown',
+                                        currentMember?.email || 'unknown@dymvietnam.net',
+                                        lang === 'vi' 
+                                          ? `Đã thay đổi nhóm của nhân viên "${m.name}" (${m.email}) thành "${nextTeam || 'Không có nhóm'}"`
+                                          : `メンバー "${m.name}" (${m.email}) のチームを "${nextTeam || 'チームなし'}" に更新しました`
+                                      );
+                                      setAuditLogs(getStoredAuditLogs());
+
+                                      if (onMembersChange) {
+                                        onMembersChange(updated);
+                                      }
+                                      if (currentMember?.role === 'admin') {
+                                        setMembers(updated.filter(me => me.department.toLowerCase().trim() === currentMember.department.toLowerCase().trim()));
+                                      } else {
+                                        setMembers(updated);
+                                      }
+                                    }}
+                                    className="bg-white border border-slate-200 rounded px-2 py-1 text-[11px] font-bold text-slate-700 outline-none disabled:opacity-60 cursor-pointer disabled:cursor-not-allowed"
+                                  >
+                                    <option value="">{lang === 'vi' ? '--- Chọn Team ---' : '--- Team無し ---'}</option>
+                                    {(deptTeams[m.department] || []).map(tName => (
+                                      <option key={tName} value={tName}>{tName}</option>
+                                    ))}
+                                  </select>
+
+                                  {/* Role selector (Super Admin only can edit, Admin cannot) */}
+                                  <select
+                                    value={m.role}
+                                    disabled={!canChangeMemberRole}
+                                    onChange={(e) => handleUpdateMemberRole(m.id, e.target.value as 'superadmin' | 'admin' | 'member')}
+                                    className="bg-white border border-slate-205 rounded px-2 py-1 text-[11px] font-bold text-slate-700 outline-none disabled:opacity-60 cursor-pointer disabled:cursor-not-allowed"
+                                  >
+                                    <option value="member">{lang === 'vi' ? 'Member' : '一般'}</option>
+                                    <option value="admin">{lang === 'vi' ? 'Admin' : '管理者'}</option>
+                                    <option value="superadmin">{lang === 'vi' ? 'Super Admin' : '最高特権'}</option>
+                                  </select>
+
+                                  {/* Delete member button */}
+                                  {canDeleteMember && (
+                                    <button
+                                      onClick={() => handleDeleteMember(m.id)}
+                                      className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition cursor-pointer"
+                                      title={lang === 'vi' ? 'Xóa nhân viên' : '社員アカウントを削除'}
+                                    >
+                                      <Trash className="w-4 h-4" />
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
                     );
                   })()}
@@ -2446,7 +2817,7 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                 const selectedExam = exams.find(e => e.id === dashboardExamId);
                 if (!dashboardExamId || !selectedExam) {
                   return (
-                    <div className="bg-white border border-slate-200 p-8 rounded-xl text-center text-slate-400 text-xs font-medium">
+                    <div className="bg-white border border-slate-200 p-10 rounded-xl text-center text-slate-400 text-xs font-semibold">
                       {lang === 'vi' ? 'Vui lòng chọn một đề kiểm tra ở phía trên để hiển thị thống kê chi tiết.' : '詳細情報を表示するには、上のプルダウンから試験を選択してください。'}
                     </div>
                   );
@@ -2482,52 +2853,144 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                 const totalInScope = inScopeMembers.length;
                 const progressPercentage = totalInScope > 0 ? Math.round((submittedMembers.length / totalInScope) * 100) : 0;
 
+                // A. Analytics computations
+                // 1. Completion by Department
+                const deptStats = uniqueDepartments.map(dept => {
+                  const deptInScope = members.filter(m => m.department.toLowerCase().trim() === dept.toLowerCase().trim());
+                  if (currentMember?.role === 'admin' && dept !== currentMember.department) return null;
+                  const deptSubmitted = deptInScope.filter(m => submittedEmailsSet.has(m.email.toLowerCase().trim()));
+                  const pct = deptInScope.length > 0 ? Math.round((deptSubmitted.length / deptInScope.length) * 100) : 0;
+                  return { dept, total: deptInScope.length, submitted: deptSubmitted.length, percentage: pct };
+                }).filter(Boolean) as Array<{ dept: string; total: number; submitted: number; percentage: number }>;
+
+                // 2. Completion by Team
+                const activeDept = currentMember?.role === 'admin' ? currentMember.department : dashboardDeptFilter;
+                const filteredTeams = activeDept === 'all' 
+                  ? Array.from(new Set(Object.values(deptTeams).flat()))
+                  : (deptTeams[activeDept] || []);
+                const teamStats = filteredTeams.map(tName => {
+                  const teamInScope = members.filter(m => {
+                    const dMatch = activeDept === 'all' || m.department.toLowerCase().trim() === activeDept.toLowerCase().trim();
+                    const tMatch = m.team && m.team.toLowerCase().trim() === tName.toLowerCase().trim();
+                    return dMatch && tMatch;
+                  });
+                  const teamSubmitted = teamInScope.filter(m => submittedEmailsSet.has(m.email.toLowerCase().trim()));
+                  const pct = teamInScope.length > 0 ? Math.round((teamSubmitted.length / teamInScope.length) * 100) : 0;
+                  return { name: tName, total: teamInScope.length, submitted: teamSubmitted.length, percentage: pct };
+                }).filter(t => t.total > 0);
+
+                // 3. Top High Scorers (Leaderboard)
+                const topScorers = [...examSubmissions]
+                  .sort((a, b) => {
+                    if (b.score !== a.score) {
+                      return b.score - a.score;
+                    }
+                    return (a.timeTakenSeconds || 0) - (b.timeTakenSeconds || 0);
+                  })
+                  .slice(0, 5);
+
+                // 4. Submissions Over Time (Last 7 submission days)
+                const dateSubCountMap: Record<string, number> = {};
+                examSubmissions.forEach(sub => {
+                  if (sub.submittedAt) {
+                    const d = sub.submittedAt.split('T')[0];
+                    dateSubCountMap[d] = (dateSubCountMap[d] || 0) + 1;
+                  }
+                });
+                const dailyTrend = Object.keys(dateSubCountMap)
+                  .sort()
+                  .slice(-7)
+                  .map(date => ({ date, count: dateSubCountMap[date] }));
+
+                // 5. Question correctness analysis
+                const questionAnalysis = selectedExam.questions.map((q, qIndex) => {
+                  let correctCount = 0;
+                  examSubmissions.forEach(sub => {
+                    const ans = sub.answers[q.id] || [];
+                    const isCorrect = 
+                      ans.length === q.correctAnswers.length &&
+                      [...ans].sort().every((v, index) => v === [...q.correctAnswers].sort()[index]);
+                    if (isCorrect) correctCount++;
+                  });
+
+                  const correctRate = examSubmissions.length > 0
+                    ? Math.round((correctCount / examSubmissions.length) * 100)
+                    : 0;
+
+                  let difficulty: 'Khó' | 'Trung bình' | 'Dễ' = 'Trung bình';
+                  let diffColor = 'text-amber-700 bg-amber-50 border-amber-200';
+                  if (correctRate < 45) {
+                    difficulty = 'Khó';
+                    diffColor = 'text-rose-700 bg-rose-50 border-rose-200';
+                  } else if (correctRate > 75) {
+                    difficulty = 'Dễ';
+                    diffColor = 'text-emerald-700 bg-emerald-50 border-emerald-200';
+                  }
+
+                  return {
+                    index: qIndex + 1,
+                    id: q.id,
+                    text: q.text,
+                    correctAnswers: q.correctAnswers,
+                    options: q.options,
+                    correctCount,
+                    correctRate,
+                    difficulty,
+                    diffColor
+                  };
+                });
+
+                const sortedAnalysis = [...questionAnalysis].sort((a, b) => a.correctRate - b.correctRate);
+                const mostMissedQuestion = examSubmissions.length > 0 && sortedAnalysis.length > 0
+                  ? sortedAnalysis[0]
+                  : null;
+
                 return (
                   <div className="space-y-6">
                     {/* STATS BREAKDOWN GRID */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                       
-                      <div className="bg-white border border-slate-200 p-5 rounded-xl shadow-xs">
+                      <div className="bg-white border border-slate-200 p-4 rounded-xl shadow-xs">
                         <span className="text-[10px] text-slate-400 font-bold block uppercase">
-                          {lang === 'vi' ? 'ĐỊA BÀN KHẢO SÁT' : '対象試験'}
+                          {lang === 'vi' ? 'ĐỀ THI ĐANG XEM' : '対象試験'}
                         </span>
-                        <span className="text-sm font-extrabold text-slate-900 block mt-1.5 truncate">
+                        <span className="text-xs font-extrabold text-slate-900 block mt-1 truncate" title={selectedExam.title}>
                           {selectedExam.title}
                         </span>
                       </div>
 
-                      <div className="bg-white border border-slate-200 p-5 rounded-xl shadow-xs">
+                      <div className="bg-white border border-slate-200 p-4 rounded-xl shadow-xs">
                         <span className="text-[10px] text-slate-400 font-bold block uppercase">
-                          {lang === 'vi' ? 'TỔNG SỐ NHÂN SỰ' : '総社員数'}
+                          {lang === 'vi' ? 'TỔNG NHÂN SỰ LIÊN QUAN' : '対象総社員数'}
                         </span>
-                        <span className="text-2xl font-black text-slate-800 block mt-1 font-serif italic">
-                          {totalInScope}
+                        <span className="text-xl font-black text-slate-800 block mt-0.5 font-serif italic">
+                          {totalInScope} <span className="text-[10px] font-sans font-semibold text-slate-400">người</span>
                         </span>
                       </div>
 
-                      <div className="bg-white border border-slate-100 p-5 rounded-xl border-l-4 border-l-emerald-500 shadow-xs">
+                      <div className="bg-white border border-slate-200 p-4 rounded-xl border-l-4 border-l-emerald-500 shadow-xs">
                         <span className="text-[10px] text-emerald-600 font-bold block uppercase">
-                          {lang === 'vi' ? 'ĐÃ NỘP BÀI (HOÀN THÀNH)' : '提出完了'}
+                          {lang === 'vi' ? 'ĐÃ PHẢN HỒI (HOÀN THÀNH)' : '提出完了'}
                         </span>
-                        <div className="flex items-baseline gap-2 mt-1">
-                          <span className="text-2xl font-black text-emerald-600 font-serif italic">
+                        <div className="flex items-baseline gap-1.5 mt-0.5">
+                          <span className="text-xl font-black text-emerald-600 font-serif italic">
                             {submittedMembers.length}
                           </span>
-                          <span className="text-xs text-slate-400 font-bold">
+                          <span className="text-[10px] text-slate-400 font-bold">
                             ({progressPercentage}%)
                           </span>
                         </div>
                       </div>
 
-                      <div className="bg-white border border-slate-100 p-5 rounded-xl border-l-4 border-l-amber-500 shadow-xs">
+                      <div className="bg-white border border-slate-200 p-4 rounded-xl border-l-4 border-l-amber-500 shadow-xs">
                         <span className="text-[10px] text-amber-600 font-bold block uppercase">
-                          {lang === 'vi' ? 'CHƯA NỘP BÀI (TRỄ HẠN/ĐANG CHỜ)' : '未提出'}
+                          {lang === 'vi' ? 'CHƯA PHẢN HỒI (CHỜ/TRỄ)' : '未提出'}
                         </span>
-                        <div className="flex items-baseline gap-2 mt-1">
-                          <span className="text-2xl font-black text-amber-600 font-serif italic">
+                        <div className="flex items-baseline gap-1.5 mt-0.5">
+                          <span className="text-xl font-black text-amber-600 font-serif italic">
                             {notSubmittedMembers.length}
                           </span>
-                          <span className="text-xs text-slate-400 font-bold">
+                          <span className="text-[10px] text-slate-400 font-bold">
                             ({100 - progressPercentage}%)
                           </span>
                         </div>
@@ -2536,12 +2999,12 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                     </div>
 
                     {/* PROGRESS BAR */}
-                    <div className="bg-white border border-slate-200 p-5 rounded-xl shadow-xs">
-                      <div className="flex justify-between items-center text-xs font-bold text-slate-500 mb-2">
+                    <div className="bg-white border border-slate-200 p-4 rounded-xl shadow-xs">
+                      <div className="flex justify-between items-center text-xs font-extrabold text-slate-500 mb-2">
                         <span>{lang === 'vi' ? 'Tiến độ hoàn thành tổng quát' : '全体の受検進捗率'}</span>
-                        <span className="text-slate-800">{progressPercentage}%</span>
+                        <span className="text-[#5A5A40] text-sm font-black">{progressPercentage}%</span>
                       </div>
-                      <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+                      <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
                         <div 
                           className="bg-[#5A5A40] h-full rounded-full transition-all duration-500" 
                           style={{ width: `${progressPercentage}%` }} 
@@ -2549,38 +3012,373 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                       </div>
                     </div>
 
-                    {/* DETAIL LIST PARTITIONS */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* INTERACTIVE GRAPHICS ROW (DOUGHNUT CHART & SUBMISSIONS TIMELINE) */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                       
-                      {/* SUBMITTED LIST COMPONENT */}
-                      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs">
-                        <div className="border-b border-slate-100 pb-3 mb-4 flex justify-between items-center">
-                          <h4 className="font-bold text-emerald-700 text-sm flex items-center gap-1.5">
-                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 block" />
-                            {lang === 'vi' ? 'Danh sách đã nộp bài' : '提出完了者リスト'}
+                      {/* DOUBLE LAYERED DOUGHNUT & KPI DETAILS */}
+                      <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs flex flex-col justify-between">
+                        <h4 className="font-bold text-slate-800 text-xs uppercase mb-3 text-slate-500 tracking-wider">
+                          {lang === 'vi' ? 'Tỉ Lệ Nộp Bài' : '受検率円グラフ'}
+                        </h4>
+                        
+                        <div className="flex flex-col sm:flex-row items-center justify-around gap-6 py-2">
+                          <div className="relative w-36 h-36 flex items-center justify-center">
+                            <svg className="w-full h-full transform -rotate-90">
+                              <circle
+                                cx="72"
+                                cy="72"
+                                r="55"
+                                className="text-slate-100"
+                                strokeWidth="12"
+                                stroke="currentColor"
+                                fill="transparent"
+                              />
+                              <circle
+                                cx="72"
+                                cy="72"
+                                r="55"
+                                className="text-[#5A5A40] transition-all duration-700"
+                                strokeWidth="12"
+                                strokeDasharray={345.5}
+                                strokeDashoffset={345.5 - (345.5 * progressPercentage) / 100}
+                                strokeLinecap="round"
+                                stroke="currentColor"
+                                fill="transparent"
+                              />
+                            </svg>
+                            <div className="absolute text-center">
+                              <span className="text-2xl font-black text-slate-800 block leading-none font-serif">{progressPercentage}%</span>
+                              <span className="text-[9px] text-slate-400 font-semibold block mt-1">
+                                {lang === 'vi' ? 'Đã Nộp' : '提出済'}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="space-y-2 max-w-[200px] w-full text-xs font-bold text-slate-600">
+                            <div className="flex items-center justify-between border-b border-slate-100 pb-1">
+                              <span className="flex items-center gap-1.5">
+                                <span className="w-2.5 h-2.5 rounded-full bg-[#5A5A40] inline-block" />
+                                {lang === 'vi' ? 'Hoàn thành' : '提出完了'}
+                              </span>
+                              <span className="text-slate-800 font-black">{submittedMembers.length} ({progressPercentage}%)</span>
+                            </div>
+                            <div className="flex items-center justify-between border-b border-slate-100 pb-1">
+                              <span className="flex items-center gap-1.5">
+                                <span className="w-2.5 h-2.5 rounded-full bg-slate-200 inline-block" />
+                                {lang === 'vi' ? 'Chưa nộp' : '未提出'}
+                              </span>
+                              <span className="text-slate-800 font-extrabold">{notSubmittedMembers.length} ({100 - progressPercentage}%)</span>
+                            </div>
+                            <div className="text-[10px] text-slate-400 font-medium italic pt-1 leading-normal">
+                              {lang === 'vi' 
+                                ? '* Số liệu tương ứng với bộ lọc Phòng ban & Nhóm đang trực quan hóa.' 
+                                : '* 選択した部署およびチームに対応する受検ステータス。'}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* SUBMISSIONS TRENDLINE OVER CALENDAR */}
+                      <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs flex flex-col justify-between">
+                        <h4 className="font-bold text-slate-800 text-xs uppercase mb-3 text-slate-500 tracking-wider">
+                          {lang === 'vi' ? 'Biểu Đồ Tiến Độ Theo Ngày' : '日別の受検進捗グラフ'}
+                        </h4>
+
+                        {dailyTrend.length === 0 ? (
+                          <div className="grow flex items-center justify-center text-center py-6 text-slate-400 text-xs font-medium">
+                            {lang === 'vi' ? 'Chưa có chuỗi ngày làm bài nào được thu thập.' : '進捗タイムラインはありません。'}
+                          </div>
+                        ) : (
+                          <div className="grow flex flex-col justify-end">
+                            <div className="flex items-end justify-between gap-2 h-28 pt-4 px-2">
+                              {(() => {
+                                const maxCount = Math.max(...dailyTrend.map(t => t.count), 1);
+                                return dailyTrend.map((t, index) => {
+                                  const heightPct = Math.round((t.count / maxCount) * 100);
+                                  return (
+                                    <div key={index} className="flex-1 flex flex-col items-center gap-2 group cursor-pointer">
+                                      <div className="relative w-full flex flex-col justify-end h-20">
+                                        {/* Hover bubble metric */}
+                                        <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white font-mono text-[9px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none w-max z-10-force font-black">
+                                          {t.count} {lang === 'vi' ? 'lượt' : '件'}
+                                        </div>
+                                        <div 
+                                          className="bg-[#D4A373] hover:bg-[#5A5A40] w-full max-w-[24px] mx-auto rounded-t transition-all duration-500" 
+                                          style={{ height: `${heightPct}%` }}
+                                        />
+                                      </div>
+                                      <span className="text-[9px] font-bold text-slate-400 font-mono rotate-12">{t.date.split('-').slice(1).join('/')}</span>
+                                    </div>
+                                  );
+                                });
+                              })()}
+                            </div>
+                            <div className="text-[10px] text-slate-400 font-medium italic text-right mt-3">
+                              {lang === 'vi' ? 'Trục ngang: Ngày/Tháng | Trục đứng: Số lượt nộp bài' : '横軸: 月/日 | 縦軸: 日別の新規提出件数'}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                    </div>
+
+                    {/* REGIONAL COMPLETION RATE GAUGE (DEPARTMENT & TEAM PROGRESS) */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      
+                      {/* Department Stats */}
+                      <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
+                        <h4 className="font-bold text-slate-800 text-xs uppercase mb-3.5 text-slate-500 tracking-wider">
+                          {lang === 'vi' ? 'Tiến Độ Theo Phòng Ban' : '部署ごとの受検進捗率'}
+                        </h4>
+
+                        <div className="space-y-3.5 max-h-[220px] overflow-y-auto pr-1">
+                          {deptStats.length === 0 ? (
+                            <div className="text-center py-6 text-slate-400 text-xs font-semibold">
+                              {lang === 'vi' ? 'Không tìm thấy phòng ban nào.' : '部署データがありません。'}
+                            </div>
+                          ) : (
+                            deptStats.map(stat => {
+                              const indicatorColor = 
+                                stat.percentage < 45 ? 'bg-rose-500' :
+                                stat.percentage < 85 ? 'bg-amber-500' : 'bg-emerald-500';
+                              return (
+                                <div key={stat.dept} className="text-xs font-bold text-slate-600">
+                                  <div className="flex justify-between items-center mb-1">
+                                    <span className="text-slate-800">{stat.dept}</span>
+                                    <span className="font-black text-slate-700">{stat.submitted}/{stat.total} ({stat.percentage}%)</span>
+                                  </div>
+                                  <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden flex">
+                                    <div className={`${indicatorColor} h-full transition-all duration-500`} style={{ width: `${stat.percentage}%` }} />
+                                  </div>
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Team Stats */}
+                      <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
+                        <h4 className="font-bold text-slate-800 text-xs uppercase mb-3.5 text-slate-500 tracking-wider">
+                          {lang === 'vi' ? 'Tỉ Lệ Hoàn Thành Theo Team' : 'チームごとの受検進捗率'}
+                        </h4>
+
+                        <div className="space-y-3.5 max-h-[220px] overflow-y-auto pr-1">
+                          {teamStats.length === 0 ? (
+                            <div className="text-center py-8 text-slate-400 text-xs font-semibold">
+                              {lang === 'vi' ? 'Chưa tìm thấy team có nhân sự nào đăng ký của bộ phận này.' : 'チーム別の進捗データがありません。'}
+                            </div>
+                          ) : (
+                            teamStats.map(stat => {
+                              const indicatorColor = 
+                                stat.percentage < 45 ? 'bg-rose-500' :
+                                stat.percentage < 85 ? 'bg-amber-500' : 'bg-emerald-500';
+                              return (
+                                <div key={stat.name} className="text-xs font-bold text-slate-600">
+                                  <div className="flex justify-between items-center mb-1">
+                                    <span className="text-slate-800">{stat.name}</span>
+                                    <span className="font-black text-slate-700">{stat.submitted}/{stat.total} ({stat.percentage}%)</span>
+                                  </div>
+                                  <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden flex">
+                                    <div className={`${indicatorColor} h-full transition-all duration-500`} style={{ width: `${stat.percentage}%` }} />
+                                  </div>
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+                      </div>
+
+                    </div>
+
+                    {/* DYNAMIC LEADERBOARDS & DETAIL BENTOS */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      
+                      {/* TOP SCORES (LEADERBOARD) */}
+                      <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs flex flex-col justify-between">
+                        <div>
+                          <div className="border-b border-slate-100 pb-2 mb-3 flex justify-between items-center">
+                            <h4 className="font-bold text-[#5A5A40] text-xs uppercase tracking-wider flex items-center gap-1">
+                              <span>🏆</span> {lang === 'vi' ? 'Top 5 Điểm Cao Nhất' : '上位高得点メンバー (Top 5)'}
+                            </h4>
+                          </div>
+
+                          {topScorers.length === 0 ? (
+                            <div className="py-8 text-center text-slate-400 text-xs font-semibold">
+                              {lang === 'vi' ? 'Chưa có thông tin điểm số nộp bài.' : '受検実績がまだありません。'}
+                            </div>
+                          ) : (
+                            <div className="space-y-2">
+                              {topScorers.map((sub, index) => {
+                                const matchedMb = members.find(m => m.email.toLowerCase().trim() === sub.employeeEmail.toLowerCase().trim());
+                                const accuracy = Math.round((sub.score / sub.maxScore) * 100);
+                                const rankBadge = 
+                                  index === 0 ? 'bg-amber-100 text-amber-800 border-amber-300 font-serif' :
+                                  index === 1 ? 'bg-slate-100 text-slate-600 border-slate-300 font-serif' :
+                                  index === 2 ? 'bg-[#D4A373]/20 text-[#5A5A40] border-[#D4A373]/40 font-serif' : 
+                                  'bg-slate-50 text-slate-400 border-slate-200';
+                                
+                                const timeTakenStr = sub.timeTakenSeconds
+                                  ? `${Math.floor(sub.timeTakenSeconds / 60)}p ${sub.timeTakenSeconds % 60}s`
+                                  : 'N/A';
+
+                                return (
+                                  <div key={sub.id} className="p-2 bg-slate-50/50 rounded-lg border border-slate-100 flex items-center justify-between text-xs font-semibold hover:bg-slate-50 transition">
+                                    <div className="flex items-center gap-2">
+                                      <span className={`w-5 h-5 rounded-full border flex items-center justify-center text-[10px] font-black ${rankBadge}`}>
+                                        {index + 1}
+                                      </span>
+                                      <div>
+                                        <span className="font-extrabold text-slate-800 block text-[11px]">{matchedMb?.name || sub.employeeEmail}</span>
+                                        <span className="text-[9px] text-slate-400 font-semibold block">{matchedMb?.department} • Team {matchedMb?.team || 'N/A'}</span>
+                                      </div>
+                                    </div>
+                                    <div className="text-right">
+                                      <span className="text-[11px] font-black text-emerald-600 block">{sub.score}/{sub.maxScore} ({accuracy}%)</span>
+                                      <span className="text-[9px] text-slate-400 font-mono block mt-0.5">⏱️ {timeTakenStr}</span>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* TOP OVERDUE / NOT COMPLETED */}
+                      <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs flex flex-col justify-between">
+                        <div>
+                          <div className="border-b border-slate-100 pb-2 mb-3 flex justify-between items-center">
+                            <h4 className="font-bold text-rose-700 text-xs uppercase tracking-wider flex items-center gap-1">
+                              <span>⚠️</span> {lang === 'vi' ? 'Ưu Tiên Đôn Đốc (Chưa Hoàn Thành)' : '未受験メンバーリスト'}
+                            </h4>
+                          </div>
+
+                          {notSubmittedMembers.length === 0 ? (
+                            <div className="py-8 text-center text-slate-400 text-xs font-semibold">
+                              {lang === 'vi' ? 'Đã hoàn thành 100%. Không có nhân sự quá hạn!' : 'すべて提出完了しました！'}
+                            </div>
+                          ) : (
+                            <div className="space-y-2">
+                              {notSubmittedMembers.slice(0, 5).map(m => (
+                                <div key={m.id} className="p-2 bg-slate-50/50 rounded-lg border border-slate-100 flex items-center justify-between text-xs font-semibold hover:bg-rose-50/20 transition">
+                                  <div>
+                                    <span className="font-extrabold text-slate-800 block text-[11px]">{m.name}</span>
+                                    <span className="text-[9px] text-slate-400 font-semibold block">{m.email}</span>
+                                  </div>
+                                  <div className="text-right">
+                                    <span className="bg-rose-50 text-rose-600 border border-rose-100 text-[8px] font-extrabold px-1.5 py-0.5 rounded uppercase">
+                                      {m.department} • Team {m.team || 'N/A'}
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                              {notSubmittedMembers.length > 5 && (
+                                <div className="text-[#5A5A40] text-[10px] font-bold text-center pt-1 block cursor-pointer hover:underline" onClick={() => {
+                                  const tableEl = document.getElementById('not-submitted-detail-panel');
+                                  if (tableEl) tableEl.scrollIntoView({ behavior: 'smooth' });
+                                }}>
+                                  + {lang === 'vi' ? `Xem thêm ${notSubmittedMembers.length - 5} nhân sự phía dưới` : `他 ${notSubmittedMembers.length - 5} 名を表示中`}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                    </div>
+
+                    {/* QUESTION DIFFICULTY & ERROR LEVEL ANALYSIS (THE ESSENTIAL DEMANDED FEATURE) */}
+                    <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
+                      <div className="border-b border-slate-150 pb-2 mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider flex items-center gap-1.5">
+                          <span>📊</span> {lang === 'vi' ? 'Đánh Giá Đột Xuất & Độ Khó Từng Câu Hỏi' : '設問別誤答率 & 難易度分析'}
+                        </h4>
+                        <span className="bg-[#5A5A40]/10 text-[#5A5A40] border border-[#5A5A40]/30 font-black text-[9px] px-2 py-0.5 rounded font-mono">
+                          {selectedExam.questions.length} {lang === 'vi' ? 'Câu hỏi' : '設問'}
+                        </span>
+                      </div>
+
+                      {/* Highlight the main missed question if any submissions exist */}
+                      {mostMissedQuestion && (
+                        <div className="mb-4 p-3 bg-rose-50 border border-rose-150 rounded-xl">
+                          <h5 className="text-[10px] uppercase font-black text-rose-600 tracking-wider flex items-center gap-1 mb-1.5">
+                            <span className="animate-ping w-1.5 h-1.5 bg-rose-500 rounded-full" />
+                            {lang === 'vi' ? 'Câu hỏi bị sai lắp lại nhiều nhất!' : '最も間違いの多い設問 (要注意)'}
+                          </h5>
+                          <span className="text-slate-800 font-extrabold text-xs block leading-relaxed">
+                            {lang === 'vi' ? 'Câu' : '問'}{mostMissedQuestion.index}: {mostMissedQuestion.text}
+                          </span>
+                          <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] font-bold text-slate-500 pt-1.5 border-t border-rose-100 mt-2">
+                            <span>{lang === 'vi' ? 'Lượt trả lời chính xác:' : '正解率:'} <strong className="text-rose-600">{mostMissedQuestion.correctCount}/{examSubmissions.length}</strong> ({mostMissedQuestion.correctRate}%)</span>
+                            <span>{lang === 'vi' ? 'Nhận diện độ khó:' : 'システム判定難易度:'} <strong className="text-rose-600 font-black">🔴 KHÓ</strong></span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Collapsible/Compact question list */}
+                      <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+                        {questionAnalysis.map(item => (
+                          <div key={item.id} className="p-2.5 bg-slate-50/30 rounded-lg border border-slate-100 hover:bg-slate-50 transition flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
+                            <div className="grow">
+                              <span className="text-slate-400 font-bold block text-[9px] mb-0.5">{lang === 'vi' ? 'CÂU HỎI' : 'QUESTION'} {item.index}</span>
+                              <p className="font-extrabold text-[#1A1A1A] line-clamp-1">{item.text}</p>
+                            </div>
+
+                            <div className="flex items-center flex-wrap gap-2.5 shrink-0 self-end md:self-auto select-none">
+                              <span className={`text-[9px] uppercase font-bold px-2 py-0.5 border rounded-full ${item.diffColor}`}>
+                                {item.difficulty === 'Khó' ? (lang === 'vi' ? '🔴 Khó' : '🔴 難') :
+                                 item.difficulty === 'Dễ' ? (lang === 'vi' ? '🟢 Dễ' : '🟢 易') :
+                                 (lang === 'vi' ? '🟡 Trung Bình' : '🟡 中')}
+                              </span>
+                              
+                              <div className="text-right text-[10px] font-extrabold text-slate-500 min-w-[100px]">
+                                {examSubmissions.length > 0 ? (
+                                  <>
+                                    <span>{lang === 'vi' ? 'Tỉ lệ đúng:' : '正解率:'} <strong>{item.correctRate}%</strong></span>
+                                    <span className="text-[9px] text-slate-300 block font-mono">({item.correctCount}/{examSubmissions.length} lượt)</span>
+                                  </>
+                                ) : (
+                                  <span className="text-slate-400 text-[9px] italic font-medium">{lang === 'vi' ? 'Chưa có lượt nộp' : '受検データなし'}</span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* DETAIL LIST PARTITIONS (TRADITIONAL EXPANDED SEARCH TABLE PANELS) */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      
+                      {/* SUBMITTED LIST PANEL COMPONENT */}
+                      <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs" id="submitted-detail-panel">
+                        <div className="border-b border-slate-100 pb-2 mb-3 flex justify-between items-center">
+                          <h4 className="font-bold text-emerald-700 text-xs uppercase flex items-center gap-1.5 tracking-wider">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500 block" />
+                            {lang === 'vi' ? 'Nhân Sự Đã Hoàn Thành' : '提出完了者詳細'}
                           </h4>
-                          <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 font-extrabold text-[10px] px-2 py-0.5 rounded">
-                            {submittedMembers.length}
+                          <span className="bg-emerald-50 text-emerald-750 border border-emerald-100 font-black text-[9px] px-2 py-0.5 rounded">
+                            {submittedMembers.length} {lang === 'vi' ? 'bài' : '件'}
                           </span>
                         </div>
 
                         {submittedMembers.length === 0 ? (
-                          <div className="py-12 text-center text-slate-400 text-xs">
-                            {lang === 'vi' ? 'Chưa có nhân sự nào nộp bài thi này.' : 'まだ提出者がいません。'}
+                          <div className="py-10 text-center text-slate-400 text-xs">
+                            {lang === 'vi' ? 'Chưa có nhân sự nào nộp bài thi này.' : '該当者はいません。'}
                           </div>
                         ) : (
-                          <div className="space-y-2.5 max-h-[350px] overflow-y-auto pr-1">
+                          <div className="space-y-2 max-h-[280px] overflow-y-auto pr-1">
                             {submittedMembers.map(m => {
-                              // Find their submission details for maximum accuracy
                               const subDetails = examSubmissions.find(s => s.employeeEmail.toLowerCase().trim() === m.email.toLowerCase().trim());
                               const accuracy = subDetails ? Math.round((subDetails.score / subDetails.maxScore) * 100) : 0;
                               return (
-                                <div key={m.id} className="p-3 bg-slate-50/50 rounded-lg border border-slate-100 hover:bg-slate-50 transition flex items-center justify-between text-xs font-semibold font-sans">
+                                <div key={m.id} className="p-2.5 bg-slate-50/50 rounded-lg border border-slate-100 flex items-center justify-between text-xs font-semibold">
                                   <div>
-                                    <span className="font-extrabold text-slate-800 block">{m.name}</span>
-                                    <span className="text-[10px] text-slate-400 block mt-0.5">{m.email}</span>
-                                    <span className="bg-slate-100 border text-[9px] px-1.5 py-0.5 rounded text-slate-600 inline-block mt-1">
-                                      {m.department}
+                                    <span className="font-extrabold text-slate-800 block text-[11px]">{m.name}</span>
+                                    <span className="text-[9px] text-slate-400 block mt-0.5">{m.email}</span>
+                                    <span className="bg-slate-100 border text-[8px] px-1.5 py-0.5 rounded text-slate-500 inline-block mt-1 font-bold">
+                                      {m.department} • Team {m.team || 'N/A'}
                                     </span>
                                   </div>
 
@@ -2590,7 +3388,7 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                                         <span className="text-xs font-black text-slate-800 block">
                                           {subDetails.score}/{subDetails.maxScore} ({accuracy}%)
                                         </span>
-                                        <span className="text-[9px] text-slate-400 block mt-1 font-mono">
+                                        <span className="text-[9px] text-slate-450 block mt-0.5 font-mono">
                                           {formatDateTimeVietnamese(subDetails.submittedAt)}
                                         </span>
                                       </>
@@ -2603,36 +3401,36 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                         )}
                       </div>
 
-                      {/* NOT SUBMITTED LIST COMPONENT */}
-                      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs">
-                        <div className="border-b border-slate-100 pb-3 mb-4 flex justify-between items-center">
-                          <h4 className="font-bold text-amber-700 text-sm flex items-center gap-1.5">
-                            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 block animate-pulse" />
-                            {lang === 'vi' ? 'Danh sách chưa nộp bài' : '未提出者リスト'}
+                      {/* NOT SUBMITTED LIST PANEL COMPONENT */}
+                      <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs" id="not-submitted-detail-panel">
+                        <div className="border-b border-slate-100 pb-2 mb-3 flex justify-between items-center">
+                          <h4 className="font-bold text-amber-700 text-xs uppercase flex items-center gap-1.5 tracking-wider">
+                            <span className="w-2 h-2 rounded-full bg-amber-500 block animate-pulse" />
+                            {lang === 'vi' ? 'Nhân Sự Chưa Nộp Bài' : '未提出者詳細'}
                           </h4>
-                          <span className="bg-amber-50 text-amber-700 border border-amber-200 font-extrabold text-[10px] px-2 py-0.5 rounded">
-                            {notSubmittedMembers.length}
+                          <span className="bg-amber-50 text-amber-750 border border-amber-100 font-black text-[9px] px-2 py-0.5 rounded">
+                            {notSubmittedMembers.length} {lang === 'vi' ? 'người' : '名'}
                           </span>
                         </div>
 
                         {notSubmittedMembers.length === 0 ? (
-                          <div className="py-12 text-center text-slate-400 text-xs">
-                            {lang === 'vi' ? 'Đã hoàn thành 100%. Không có nhân sự nào bỏ dở!' : 'すべて提出完了しました！該当者はいません。'}
+                          <div className="py-10 text-center text-slate-400 text-xs">
+                            {lang === 'vi' ? 'Đã hoàn thành 100%. Không có nhân sự nào bỏ dở!' : '全員提出完了しました！'}
                           </div>
                         ) : (
-                          <div className="space-y-2.5 max-h-[350px] overflow-y-auto pr-1">
+                          <div className="space-y-2 max-h-[280px] overflow-y-auto pr-1">
                             {notSubmittedMembers.map(m => (
-                              <div key={m.id} className="p-3 bg-slate-50/50 rounded-lg border border-slate-100 hover:bg-slate-50 transition flex items-center justify-between text-xs font-semibold font-sans">
+                              <div key={m.id} className="p-2.5 bg-slate-50/50 rounded-lg border border-slate-100 flex items-center justify-between text-xs font-semibold">
                                 <div>
-                                  <span className="font-extrabold text-slate-800 block">{m.name}</span>
-                                  <span className="text-[10px] text-slate-400 block mt-0.5">{m.email}</span>
-                                  <span className="bg-slate-100 border text-[9px] px-1.5 py-0.5 rounded text-slate-600 inline-block mt-1">
-                                    {m.department}
+                                  <span className="font-extrabold text-slate-800 block text-[11px]">{m.name}</span>
+                                  <span className="text-[9px] text-slate-400 block mt-0.5">{m.email}</span>
+                                  <span className="bg-slate-100 border text-[8px] px-1.5 py-0.5 rounded text-slate-500 inline-block mt-1 font-bold">
+                                    {m.department} • Team {m.team || 'N/A'}
                                   </span>
                                 </div>
 
                                 <div className="text-right">
-                                  <span className="bg-rose-50 text-rose-600 border border-rose-100 text-[9px] font-black uppercase px-2 py-0.5 rounded">
+                                  <span className="bg-rose-50 text-rose-600 border border-rose-100 text-[8px] font-black uppercase px-2 py-0.5 rounded select-none">
                                     {lang === 'vi' ? 'Chưa Làm' : '未受験'}
                                   </span>
                                 </div>

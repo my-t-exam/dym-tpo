@@ -580,21 +580,42 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
                                 Team: {ex.team}
                               </span>
                             )}
-                            {isOngoing && (
-                              <span className="bg-emerald-50 text-emerald-700 border border-emerald-100 text-[9px] uppercase font-bold px-2 py-0.5 rounded">
-                                {t.examReady}
-                              </span>
-                            )}
-                            {isUpcoming && (
-                              <span className="bg-[#5A5A40]/10 text-[#5A5A40] border border-[#5A5A40]/20 text-[9px] uppercase font-bold px-2 py-0.5 rounded">
-                                {t.upcomingExam}
-                              </span>
-                            )}
-                            {isExpired && (
-                              <span className="bg-gray-100 text-gray-500 text-[9px] border border-gray-200 uppercase font-bold px-2 py-0.5 rounded">
-                                {t.expiredExam}
-                              </span>
-                            )}
+                            {(() => {
+                              const now = Date.now();
+                              const start = new Date(ex.startTime).getTime();
+                              const end = new Date(ex.endTime).getTime();
+                              if (now < start) {
+                                return (
+                                  <span className="bg-slate-100 text-slate-600 border border-slate-200 text-[9px] uppercase font-extrabold px-2 py-0.5 rounded flex items-center gap-1 shrink-0">
+                                    <span className="w-1 bg-slate-400 h-1 rounded-full"></span>
+                                    {lang === 'vi' ? 'Sắp mở' : '配信予定'}
+                                  </span>
+                                );
+                              } else if (now >= start && now <= end) {
+                                const hoursRemaining = (end - now) / (1000 * 60 * 60);
+                                if (hoursRemaining <= 24) {
+                                  return (
+                                    <span className="bg-amber-50 text-amber-700 border border-amber-200 text-[9px] uppercase font-extrabold px-2 py-0.5 rounded flex items-center gap-1 shrink-0 animate-pulse">
+                                      <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-ping"></span>
+                                      {lang === 'vi' ? '🟡 Sắp đóng (<24h)' : 'まもなく終了'}
+                                    </span>
+                                  );
+                                }
+                                return (
+                                  <span className="bg-emerald-50 text-emerald-700 border border-emerald-100 text-[9px] uppercase font-extrabold px-2 py-0.5 rounded flex items-center gap-1 shrink-0">
+                                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping"></span>
+                                    {lang === 'vi' ? '🟢 Đang mở' : '受検可能'}
+                                  </span>
+                                );
+                              } else {
+                                return (
+                                  <span className="bg-rose-50 text-rose-700 border border-rose-250 text-[9px] uppercase font-extrabold px-2 py-0.5 rounded flex items-center gap-1 shrink-0">
+                                    <span className="w-1 bg-rose-500 h-1 rounded-full"></span>
+                                    {lang === 'vi' ? '🔴 Đã đóng' : '終了'}
+                                  </span>
+                                );
+                              }
+                            })()}
                           </div>
                           
                           <p className="text-[#5A5A40]/70 text-xs line-clamp-1">{ex.description || 'DYM Vietnam Assessment'}</p>
