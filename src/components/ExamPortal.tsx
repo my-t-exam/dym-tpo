@@ -1063,7 +1063,7 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
 
             <h2 className="text-2xl font-bold text-[#1A1A1A] font-serif italic">{t.transcriptTitle}!</h2>
             <p className="text-[#5A5A40]/75 text-xs mt-1">
-              Your exam sheet has been parsed and auto-graded immediately!
+              {lang === 'vi' ? 'Bài thi của bạn đã được đối soát và chấm điểm tự động ngay lập tức!' : '答案用紙は即座に解析され、自動採点が行われました！'}
             </p>
 
             {/* Score circle badge */}
@@ -1080,7 +1080,7 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
             {/* Info details checklist */}
             <div className="max-w-md mx-auto space-y-2 border border-[#E5E2D9] rounded-2xl p-4 bg-[#F9F8F5]/30 text-left text-xs mb-6 font-medium">
               <div className="flex justify-between bg-transparent py-1 border-b border-[#F0EFEA]">
-                <span className="text-[#5A5A40]/70">Employee Name:</span>
+                <span className="text-[#5A5A40]/70">{lang === 'vi' ? 'Nhân viên:' : '社員氏名:'}</span>
                 <span className="font-extrabold text-[#1A1A1A]">{finalSubmission.employeeName}</span>
               </div>
               <div className="flex justify-between bg-transparent py-1 border-b border-[#F0EFEA]">
@@ -1088,20 +1088,24 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
                 <span className="font-semibold text-[#1A1A1A]">{finalSubmission.employeeEmail}</span>
               </div>
               <div className="flex justify-between bg-transparent py-1 border-b border-[#F0EFEA]">
-                <span className="text-[#5A5A40]/70">Department:</span>
+                <span className="text-[#5A5A40]/70">{lang === 'vi' ? 'Phòng ban:' : '配属部門:'}</span>
                 <span className="font-extrabold text-[#1A1A1A]">{finalSubmission.employeeDepartment || currentMember?.department || 'N/A'}</span>
               </div>
               <div className="flex justify-between bg-transparent py-1 border-b border-[#F0EFEA]">
-                <span className="text-[#5A5A40]/70">{t.tabExams}:</span>
+                <span className="text-[#5A5A40]/70">{lang === 'vi' ? 'Đề thi:' : '試験名:'}</span>
                 <span className="font-bold text-[#1A1A1A] truncate max-w-[200px]">{finalSubmission.examTitle}</span>
               </div>
               <div className="flex justify-between bg-transparent py-1">
-                <span className="text-[#5A5A40]/70">Duration:</span>
+                <span className="text-[#5A5A40]/70">{lang === 'vi' ? 'Thời gian làm bài:' : '試験時間:'}</span>
                 <span className="font-extrabold text-[#5A5A40]">
                   {finalSubmission.timeTakenSeconds ? (
-                    `${Math.floor(finalSubmission.timeTakenSeconds / 60)}m ${finalSubmission.timeTakenSeconds % 60}s`
+                    lang === 'vi' ? (
+                      `${Math.floor(finalSubmission.timeTakenSeconds / 60)} phút ${finalSubmission.timeTakenSeconds % 60} giây`
+                    ) : (
+                      `${Math.floor(finalSubmission.timeTakenSeconds / 60)}分 ${finalSubmission.timeTakenSeconds % 60}秒`
+                    )
                   ) : (
-                    'Under 1 min'
+                    lang === 'vi' ? 'Dưới 1 phút' : '1分未満'
                   )}
                 </span>
               </div>
@@ -1111,7 +1115,7 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
             {isSyncingSheet && (
               <div className="mb-6 text-xs text-[#5A5A40] flex items-center justify-center gap-1.5 animate-pulse bg-[#F9F8F5] py-2.5 rounded-xl border border-[#E5E2D9]">
                 <Clock className="w-4 h-4 animate-spin" />
-                Automating synchronization to DYM Vietnam's Google Sheets...
+                {lang === 'vi' ? 'Đang tự động đồng bộ kết quả lên Google Sheets của DYM Vietnam...' : 'DYMベトナムのGoogleスプレッドシートに自動同期中...'}
               </div>
             )}
             {sheetsUrl && !isSyncingSheet && sheetSyncSuccess !== null && (
@@ -1123,12 +1127,16 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
                 {sheetSyncSuccess ? (
                   <>
                     <CheckCircle className="w-4 h-4 text-emerald-700" />
-                    <strong>Google Sheets synchronized successfully!</strong>
+                    <strong>
+                      {lang === 'vi' ? 'Đồng bộ kết quả lên Google Sheets thành công!' : 'Googleスプレッドシートへの同期が正常に完了しました！'}
+                    </strong>
                   </>
                 ) : (
                   <>
                     <AlertCircle className="w-4 h-4 text-rose-600" />
-                    <strong>Sheet sync queued. Exam results safely cached locally in this browser session.</strong>
+                    <strong>
+                      {lang === 'vi' ? 'Đồng bộ đang chờ để xử lý. Kết quả đã được lưu tạm an toàn trong phiên làm việc này.' : '同期キュー追加：テスト結果はブラウザセッション内に安全に一時保存されました。'}
+                    </strong>
                   </>
                 )}
               </div>
@@ -1137,7 +1145,7 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
             {/* Detailed questions review transcript */}
             <div className="my-8 text-left space-y-4 border-t border-[#F0EFEA] pt-6">
               <h3 className="font-bold text-[#1A1A1A] text-sm font-serif">
-                Chi tiết đáp án & Điểm thành phần:
+                {lang === 'vi' ? 'Chi tiết đáp án & Điểm thành phần:' : '回答詳細と配点:'}
               </h3>
               {selectedExam.questions.map((q, idx) => {
                 const userSelected = finalSubmission.answers[q.id] || [];
@@ -1148,12 +1156,15 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
                   <div key={q.id} className="border border-[#E5E2D9] rounded-xl p-4 bg-[#F9F8F5]/25">
                     <div className="flex justify-between items-start gap-2">
                       <span className="text-xs font-semibold text-[#1A1A1A] whitespace-pre-wrap">
-                        <strong>Question {idx + 1}:</strong> {q.text}
+                        <strong>{lang === 'vi' ? `Câu hỏi ${idx + 1}:` : `問${idx + 1}:`}</strong> {q.text}
                       </span>
                       <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded uppercase ${
                         matches ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-rose-50 text-rose-700 border border-rose-100'
                       }`}>
-                        {matches ? 'Correct' : 'Incorrect'}
+                        {matches 
+                          ? (lang === 'vi' ? 'Đúng' : '正解') 
+                          : (lang === 'vi' ? 'Sai' : '不正解')
+                        }
                       </span>
                     </div>
 
@@ -1213,7 +1224,7 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
                 <AlertCircle className="w-6 h-6 animate-pulse" />
               </div>
               <h3 className="text-lg font-bold text-slate-800 font-serif">
-                Xác Nhận Nộp Bài Thi
+                {lang === 'vi' ? 'Xác Nhận Nộp Bài Thi' : '提出を確定する'}
               </h3>
               <p className="text-xs text-[#5A5A40] leading-relaxed font-semibold">
                 {t.confirmSubmitMessage}
@@ -1226,7 +1237,7 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
                 onClick={() => setShowConfirmModal(false)}
                 className="px-4 py-2.5 border border-[#E5E2D9] rounded-lg text-[#5A5A40] hover:bg-slate-50 transition font-extrabold cursor-pointer flex-1"
               >
-                Cancel
+                {lang === 'vi' ? 'Hủy' : 'キャンセル'}
               </button>
               
               <button
@@ -1237,7 +1248,7 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
                 }}
                 className="px-4 py-2.5 bg-[#5A5A40] hover:bg-[#4D4D36] text-white font-extrabold rounded-lg transition cursor-pointer flex-1"
               >
-                Confirm Submit
+                {lang === 'vi' ? 'Xác nhận nộp' : '提出を確定する'}
               </button>
             </div>
           </div>

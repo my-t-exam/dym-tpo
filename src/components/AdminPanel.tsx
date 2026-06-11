@@ -2267,7 +2267,7 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                 </div>
 
                 {/* LIST EMPLOYEES CONTAINER */}
-                <div className="space-y-4 max-h-[580px] overflow-y-auto pr-1">
+                <div className="space-y-4">
                   {(() => {
                     const getRoleWeight = (role: string): number => {
                       if (role === 'superadmin') return 100;
