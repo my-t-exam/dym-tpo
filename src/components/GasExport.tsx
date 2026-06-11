@@ -180,7 +180,7 @@ export default function GasExport({ submissions = [], lang = 'vi' }: GasExportPr
       </div>
 
       {/* FILTER PANEL SECTION */}
-      <div className="bg-[#FAF9F5] border border-slate-150 rounded-xl p-5 mb-6 space-y-4">
+      <div className="sticky top-[68px] z-30 bg-[#FAF9F5] border border-slate-150 rounded-xl p-5 mb-6 space-y-4 shadow-md">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-slate-700 font-bold text-xs uppercase tracking-wider">
             <Filter className="w-4 h-4 text-[#5A5A40]" />

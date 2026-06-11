@@ -852,6 +852,14 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
       if (onMembersChange) {
         onMembersChange(updated);
       }
+      
+      // Update local React state immediately
+      if (currentMember.role === 'admin') {
+        setMembers(updated.filter(m => m.department.toLowerCase().trim() === currentMember.department.toLowerCase().trim()));
+      } else {
+        setMembers(updated);
+      }
+
       setSelectedMemberIds([]);
       setCustomModal({
         type: 'alert',
@@ -886,7 +894,8 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
           if (currentMember.role === 'admin' && m.department.toLowerCase().trim() !== currentMember.department.toLowerCase().trim()) {
             return m; // unchanged if outside scope
           }
-          return { ...m, team: newTeam || undefined };
+          const resolvedTeam = (newTeam === 'clear' || !newTeam) ? '' : newTeam;
+          return { ...m, team: resolvedTeam };
         }
         return m;
       });
@@ -894,6 +903,14 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
       if (onMembersChange) {
         onMembersChange(updated);
       }
+
+      // Update local React state immediately
+      if (currentMember.role === 'admin') {
+        setMembers(updated.filter(m => m.department.toLowerCase().trim() === currentMember.department.toLowerCase().trim()));
+      } else {
+        setMembers(updated);
+      }
+
       setSelectedMemberIds([]);
       setCustomModal({
         type: 'alert',
@@ -908,8 +925,8 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
       type: 'confirm',
       titleVi: 'Xác Nhận Đổi Nhóm Hàng Loạt',
       titleJa: '一括チーム変更の確認',
-      messageVi: `Bạn có chắc chắn muốn cập nhật Team thành "${newTeam || 'Không phân nhóm'}" cho ${selectedMemberIds.length} nhân sự không?`,
-      messageJa: `選択した ${selectedMemberIds.length} 名のチームを一括して "${newTeam || '未所属'}" に更新しますか？`,
+      messageVi: `Bạn có chắc chắn muốn cập nhật Team thành "${newTeam === 'clear' ? 'Không phân nhóm' : newTeam || 'Không phân nhóm'}" cho ${selectedMemberIds.length} nhân sự không?`,
+      messageJa: `選択した ${selectedMemberIds.length} 名のチームを一括して "${newTeam === 'clear' ? '未所属' : newTeam || '未所属'}" に更新しますか？`,
       onConfirm: executeBulkTeam
     });
   };
@@ -938,6 +955,14 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
       if (onMembersChange) {
         onMembersChange(updated);
       }
+
+      // Update local React state immediately
+      if (currentMember.role === 'admin') {
+        setMembers(updated.filter(m => m.department.toLowerCase().trim() === currentMember.department.toLowerCase().trim()));
+      } else {
+        setMembers(updated);
+      }
+
       setSelectedMemberIds([]);
       setCustomModal({
         type: 'alert',
@@ -951,7 +976,7 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
     setCustomModal({
       type: 'confirm',
       titleVi: 'Cảnh Báo Xóa Hàng Loạt!',
-      titleJa: '一括削除の重大な警告！',
+      titleJa: '一括削除 của 重大な警告！',
       messageVi: `Hành động này sẽ XÓA VĨNH VIỄN ${selectedMemberIds.length} nhân sự khỏi hệ thống bao gồm thông tin cá nhân. Bạn có chắc chắn muốn tiến hành?`,
       messageJa: `選択した ${selectedMemberIds.length} 名をシステムから完全に削除してよろしいですか？払い戻し不可能なアクションです。`,
       onConfirm: executeBulkDel
@@ -1474,7 +1499,7 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
             <div className="space-y-4" id="submissions-tab-content">
               
               {/* SEARCH FILTER HEADERS & DATE OF EXAMS / SYNC OPTIONS */}
-              <div className="bg-white border border-slate-200 p-4 rounded-xl shadow-xs flex flex-col md:flex-row gap-3 items-end">
+              <div className="sticky top-[68px] z-30 bg-white border border-slate-200 p-4 rounded-xl shadow-md flex flex-col md:flex-row gap-3 items-end">
                 <div className="grow w-full">
                   <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1">{lang === 'vi' ? 'Tìm kiếm nhân viên' : '社員検索'}</label>
                   <input
@@ -1637,11 +1662,11 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                             <td className="py-3 px-2 text-center whitespace-nowrap">
                               {isPassed ? (
                                 <span className="inline-block bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-extrabold px-2 py-0.5 rounded-md shadow-xs">
-                                  {lang === 'vi' ? 'ĐẬU (PASS)' : '合格'}
+                                  {lang === 'vi' ? 'ĐẬU' : '合格'}
                                 </span>
                               ) : (
                                 <span className="inline-block bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-extrabold px-2 py-0.5 rounded-md shadow-xs">
-                                  {lang === 'vi' ? 'RỚT (FAIL)' : '不合格'}
+                                  {lang === 'vi' ? 'RỚT' : '不合格'}
                                 </span>
                               )}
                             </td>
@@ -2191,52 +2216,55 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                   </div>
                 </div>
 
-                {/* SEARCH BAR FOR EMPLOYEES */}
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Search className="h-4 w-4 text-slate-400" />
+                {/* SEARCH BAR & ROLE FILTERS FOR EMPLOYEES */}
+                <div className="sticky top-[68px] z-30 bg-white p-3 rounded-xl border border-slate-150 shadow-xs space-y-3">
+                  {/* SEARCH BAR FOR EMPLOYEES */}
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Search className="h-4 w-4 text-slate-400" />
+                    </div>
+                    <input
+                      type="text"
+                      value={searchMemberQuery}
+                      onChange={(e) => setSearchMemberQuery(e.target.value)}
+                      placeholder={lang === 'vi' ? 'Nhập tên hoặc email cần tìm kiếm...' : '名前、メールアドレスで検索...'}
+                      className="w-full bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl pl-9 pr-4 py-2 text-xs outline-none focus:border-[#5A5A40] focus:bg-white text-slate-800 transition font-bold"
+                    />
+                    {searchMemberQuery && (
+                      <button
+                        onClick={() => setSearchMemberQuery('')}
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 font-bold transition text-xs"
+                      >
+                        {lang === 'vi' ? 'Xóa lọc' : 'クリア'}
+                      </button>
+                    )}
                   </div>
-                  <input
-                    type="text"
-                    value={searchMemberQuery}
-                    onChange={(e) => setSearchMemberQuery(e.target.value)}
-                    placeholder={lang === 'vi' ? 'Nhập tên hoặc email cần tìm kiếm...' : '名前、メールアドレスで検索...'}
-                    className="w-full bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl pl-9 pr-4 py-2 text-xs outline-none focus:border-[#5A5A40] focus:bg-white text-slate-800 transition font-bold"
-                  />
-                  {searchMemberQuery && (
-                    <button
-                      onClick={() => setSearchMemberQuery('')}
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 font-bold transition text-xs"
-                    >
-                      {lang === 'vi' ? 'Xóa lọc' : 'クリア'}
-                    </button>
-                  )}
-                </div>
 
-                {/* ROLE QUICK-FILTERS (LỌC QUYỀN TRỰC TIẾP) */}
-                <div className="flex items-center gap-1.5 flex-wrap bg-slate-50 border border-slate-150 p-2 rounded-xl">
-                  <span className="text-[10px] uppercase font-bold text-slate-400 mr-2 ml-1">
-                    {lang === 'vi' ? 'Filter quyền:' : '権限フィルター:'}
-                  </span>
-                  {[
-                    { value: 'all', labelVi: 'Tất cả', labelJa: 'すべて' },
-                    { value: 'superadmin', labelVi: 'Super Admin', labelJa: 'Super Admin' },
-                    { value: 'admin', labelVi: 'Admin', labelJa: 'Admin' },
-                    { value: 'member', labelVi: 'Nhân viên', labelJa: '一般社員' },
-                  ].map(opt => (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      onClick={() => setMemberRoleFilter(opt.value as any)}
-                      className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold border transition cursor-pointer ${
-                        memberRoleFilter === opt.value
-                          ? 'bg-[#5A5A40] text-white border-[#5A4A40] shadow-xs'
-                          : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                      }`}
-                    >
-                      {lang === 'vi' ? opt.labelVi : opt.labelJa}
-                    </button>
-                  ))}
+                  {/* ROLE QUICK-FILTERS (LỌC QUYỀN TRỰC TIẾP) */}
+                  <div className="flex items-center gap-1.5 flex-wrap bg-slate-50 border border-[#E5E2D9] p-2 rounded-xl">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 mr-2 ml-1">
+                      {lang === 'vi' ? 'Filter quyền:' : '権限フィルター:'}
+                    </span>
+                    {[
+                      { value: 'all', labelVi: 'Tất cả', labelJa: 'すべて' },
+                      { value: 'superadmin', labelVi: 'Super Admin', labelJa: 'Super Admin' },
+                      { value: 'admin', labelVi: 'Admin', labelJa: 'Admin' },
+                      { value: 'member', labelVi: 'Nhân viên', labelJa: '一般社員' },
+                    ].map(opt => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setMemberRoleFilter(opt.value as any)}
+                        className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold border transition cursor-pointer ${
+                          memberRoleFilter === opt.value
+                            ? 'bg-[#5A5A40] text-white border-[#5A4A40] shadow-xs'
+                            : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                        }`}
+                      >
+                        {lang === 'vi' ? opt.labelVi : opt.labelJa}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 {/* LIST EMPLOYEES CONTAINER */}

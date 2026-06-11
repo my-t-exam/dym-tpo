@@ -500,7 +500,7 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
               </div>
 
               {/* Dynamic search & team filter controls for Employee */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6 p-4 rounded-xl bg-[#FAF9F5] border border-[#E2DFD3]">
+              <div className="sticky top-[68px] z-30 grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6 p-4 rounded-xl bg-[#FAF9F5] border border-[#E2DFD3] shadow-md">
                 <div>
                   <label className="block text-[10px] font-bold text-[#5A5A40] uppercase tracking-wider mb-1">
                     {lang === 'vi' ? 'Tìm Kiếm Đề Thi:' : 'テスト検索:'}
@@ -684,15 +684,15 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
                 <div className="space-y-0.5">
                   <h2 className="font-bold text-[#1A1A1A] text-sm font-serif flex items-center gap-2">
                     <Check className="w-4.5 h-4.5 text-[#5A5A40]" />
-                    LỊCH SỬ KẾT QUẢ THI CỦA BẠN
+                    {lang === 'vi' ? 'LỊCH SỬ KẾT QUẢ THI CỦA BẠN' : '受検結果履歴'}
                   </h2>
                   <p className="text-xs text-[#5A5A40]/70 font-medium">
-                    Only displaying examination history associated with your current active account.
+                    {lang === 'vi' ? 'Chỉ hiển thị lịch sử thi liên kết với tài khoản đang đăng nhập.' : '現在有効なアカウントに関連する受検履歴のみを表示しています。'}
                   </p>
                 </div>
                 <div className="flex items-center gap-3 self-start md:self-auto flex-wrap">
                   <div className="bg-[#5A5A40]/10 text-[#5A5A40] border border-[#5A5A40]/25 text-[10px] font-bold px-2.5 py-1 rounded-lg shrink-0">
-                    {mySubmissions.length} record(s) found
+                    {mySubmissions.length} {lang === 'vi' ? 'kết quả được tìm thấy' : '件の受検履歴があります'}
                   </div>
                   <button
                     onClick={() => setShowHistory(!showHistory)}
@@ -710,7 +710,7 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
                     <div className="relative">
                       <input
                         type="text"
-                        placeholder="Enter exam title or department to filter history list..."
+                        placeholder={lang === 'vi' ? 'Nhập tên đề thi hoặc phòng ban để lọc lịch sử...' : '試験名または部署名を入力して履歴を検索...'}
                         className="w-full bg-[#FAF9F5] border border-[#E2DFD3] rounded-xl pl-4 pr-4 py-3 text-xs focus:outline-none focus:border-[#5A5A40] focus:ring-1 focus:ring-[#5A5A40] font-bold"
                         value={historySearch}
                         onChange={(e) => setHistorySearch(e.target.value)}
@@ -720,7 +720,7 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
 
                   {mySubmissions.length === 0 ? (
                     <div className="text-center py-12 text-[#5A5A40]/60 text-xs bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
-                      No matching historical records found.
+                      {lang === 'vi' ? 'Không tìm thấy hồ sơ lịch sử trùng khớp.' : '合致する受検履歴が見つかりません。'}
                     </div>
                   ) : (
                     <div className="overflow-x-auto">
@@ -825,19 +825,19 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
               <div className="mt-4 flex items-center gap-2 bg-[#F9F8F5] border border-[#E5E2D9]/60 rounded-xl p-3.5 text-xs font-semibold text-[#5A5A40]">
                 <Clock className="w-4 h-4 text-[#D4A373]" />
                 <span>
-                  Time Limit: <strong>{selectedExam.duration} {t.minutes}</strong> • Closing: <strong>{formatDateTimeVietnamese(selectedExam.endTime)}</strong>
+                  {lang === 'vi' ? 'Thời gian làm bài:' : '制限時間:'} <strong>{selectedExam.duration} {t.minutes}</strong> • {lang === 'vi' ? 'Hạn đóng đề thi:' : '締切日時:'} <strong>{formatDateTimeVietnamese(selectedExam.endTime)}</strong>
                 </span>
               </div>
             </div>
 
             <form onSubmit={handleRegisterSubmit} className="space-y-4">
               <h3 className="font-bold text-[#1A1A1A] text-sm border-b border-[#E5E2D9] pb-2 font-serif">
-                Thông Tin Xác Nhận Thí Sinh
+                {lang === 'vi' ? 'Thông Tin Xác Nhận Thí Sinh' : '受験者情報の確認'}
               </h3>
               
               <div>
                 <label className="block text-[#5A5A40] text-[11px] font-bold mb-1.5 uppercase tracking-wider">
-                  Select Employee Identity:
+                  {lang === 'vi' ? 'Chọn Danh Tính Nhân Viên:' : '社員情報の選択:'}
                 </label>
                 <div className="relative">
                   <User className="w-4 h-4 text-[#5A5A40]/60 absolute left-3 top-3.5 z-10" />
@@ -861,7 +861,7 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
                       }
                     }}
                   >
-                    <option value="">-- Choose your name --</option>
+                    <option value="">{lang === 'vi' ? '-- Chọn tên của bạn --' : '-- 名前を選択してください --'}</option>
                     {[...membersList].sort((a, b) => a.name.localeCompare(b.name)).map((m) => (
                       <option key={m.id} value={m.email}>
                         {m.name} ({m.email})
@@ -879,7 +879,7 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
                     type="email"
                     required
                     readOnly
-                    placeholder="E-mail auto-populated"
+                    placeholder={lang === 'vi' ? 'Địa chỉ Email tự động điền' : 'メールアドレスは自動入力されます'}
                     className="w-full bg-[#F5F2EA] border border-[#E5E2D9] rounded-xl pl-9 pr-3 py-3 text-sm text-[#5A5A40]/80 font-bold outline-none cursor-not-allowed select-none"
                     value={employeeEmail}
                   />
@@ -888,7 +888,7 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
 
               <div>
                 <label className="block text-[#5A5A40] text-[11px] font-bold mb-1.5 uppercase tracking-wider">
-                  Job Department:
+                  {lang === 'vi' ? 'Bộ Phận Làm Việc:' : '所属部署:'}
                 </label>
                 <select
                   required
@@ -896,13 +896,13 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
                   className="w-full bg-[#F5F2EA] border border-[#E5E2D9] rounded-xl px-3.5 py-3 text-xs text-[#5A5A40]/80 font-bold cursor-not-allowed outline-none select-none"
                   value={employeeDepartment}
                 >
-                  <option value="">-- Job department auto-populated --</option>
+                  <option value="">{lang === 'vi' ? '-- Bộ phận tự động điền --' : '-- 部署は自動入力されます --'}</option>
                   {departmentsList.map(dept => (
                     <option key={dept} value={dept}>{dept}</option>
                   ))}
                 </select>
                 <p className="text-[10px] text-[#5A5A40]/55 mt-1.5 border-t border-slate-100 pt-1.5">
-                  Your department is determined automatically based on the selected identity profile.
+                  {lang === 'vi' ? 'Bộ phận của bạn được xác định tự động dựa trên hồ sơ được chọn.' : '選択されたプロファイルに基づいて、部署が自動的に決定されます。'}
                 </p>
               </div>
 
@@ -911,7 +911,7 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
                 className="w-full py-3 bg-[#5A5A40] text-white rounded-xl font-bold text-sm tracking-wide shadow-sm hover:bg-[#4D4D36] transition flex items-center justify-center gap-1 cursor-pointer mt-4"
                 id="btn-enter-exam"
               >
-                Confirm & Start Examination
+                {lang === 'vi' ? 'Xác Nhận & Bắt Đầu Làm Bài' : '確認して受検を開始する'}
                 <ArrowRight className="w-4 h-4" />
               </button>
             </form>
