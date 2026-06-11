@@ -47,6 +47,7 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
   const [employeeName, setEmployeeName] = useState('');
   const [employeeEmail, setEmployeeEmail] = useState('');
   const [employeeDepartment, setEmployeeDepartment] = useState('');
+  const [employeeTeam, setEmployeeTeam] = useState('');
   
   // Track starting timestamp of active examination
   const [testStartedAt, setTestStartedAt] = useState<number>(0);
@@ -104,10 +105,12 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
       setEmployeeName(currentMember.name);
       setEmployeeEmail(currentMember.email);
       setEmployeeDepartment(currentMember.department || '');
+      setEmployeeTeam(currentMember.team || '');
     } else {
       setEmployeeName('');
       setEmployeeEmail('');
       setEmployeeDepartment('');
+      setEmployeeTeam('');
     }
   }, [currentMember]);
 
@@ -150,6 +153,7 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
       setEmployeeName(currentMember.name);
       setEmployeeEmail(currentMember.email);
       setEmployeeDepartment(currentMember.department || '');
+      setEmployeeTeam(currentMember.team || '');
     }
     setSecondsRemaining(exam.duration * 60);
     setTestStartedAt(Date.now());
@@ -204,6 +208,7 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
           setEmployeeName(currentMember.name);
           setEmployeeEmail(currentMember.email);
           setEmployeeDepartment(currentMember.department || '');
+          setEmployeeTeam(currentMember.team || '');
         }
         setAnswers({});
         setSecondsRemaining(selectedExam.duration * 60);
@@ -311,7 +316,7 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
       employeeName: employeeName.trim(),
       employeeEmail: employeeEmail.trim(),
       employeeDepartment: employeeDepartment.trim() || currentMember?.department || 'N/A',
-      employeeTeam: currentMember?.team || '',
+      employeeTeam: employeeTeam.trim() || currentMember?.team || '',
       answers: currentAnswers,
       score,
       maxScore,
@@ -571,11 +576,11 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
                           <div className="flex items-center flex-wrap gap-2">
                             <h3 className="font-bold text-[#1A1A1A] text-base font-serif">{ex.title}</h3>
                             <span className="bg-[#D4A373]/10 text-[#5A5A40] border border-[#D4A373]/25 text-[9px] uppercase font-bold px-2 py-0.5 rounded font-mono">
-                              🎯 Dept: {ex.department || 'All'}
+                              🎯 {lang === 'vi' ? 'Bộ phận áp dụng' : '対象部署'}: {ex.department && ex.department !== 'All' ? ex.department : (lang === 'vi' ? 'Tất cả' : 'すべて')}
                             </span>
                             {ex.team && (
                               <span className="bg-[#5A5A40]/10 text-[#5A5A40] border border-[#5A5A40]/25 text-[9px] uppercase font-bold px-2 py-0.5 rounded font-mono">
-                                Team: {ex.team}
+                                {lang === 'vi' ? 'Đội nhóm' : '対象チーム'}: {ex.team}
                               </span>
                             )}
                             {(() => {
@@ -849,12 +854,14 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
                         setEmployeeName('');
                         setEmployeeEmail('');
                         setEmployeeDepartment('');
+                        setEmployeeTeam('');
                       } else {
                         const found = membersList.find(m => m.email.toLowerCase().trim() === selectedVal.toLowerCase().trim());
                         if (found) {
                           setEmployeeName(found.name);
                           setEmployeeEmail(found.email);
                           setEmployeeDepartment(found.department || '');
+                          setEmployeeTeam(found.team || '');
                         }
                       }
                     }}
@@ -884,25 +891,41 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-[#5A5A40] text-[11px] font-bold mb-1.5 uppercase tracking-wider">
-                  {lang === 'vi' ? 'Bộ Phận Làm Việc:' : '所属部署:'}
-                </label>
-                <select
-                  required
-                  disabled
-                  className="w-full bg-[#F5F2EA] border border-[#E5E2D9] rounded-xl px-3.5 py-3 text-xs text-[#5A5A40]/80 font-bold cursor-not-allowed outline-none select-none"
-                  value={employeeDepartment}
-                >
-                  <option value="">{lang === 'vi' ? '-- Bộ phận tự động điền --' : '-- 部署は自動入力されます --'}</option>
-                  {departmentsList.map(dept => (
-                    <option key={dept} value={dept}>{dept}</option>
-                  ))}
-                </select>
-                <p className="text-[10px] text-[#5A5A40]/55 mt-1.5 border-t border-slate-100 pt-1.5">
-                  {lang === 'vi' ? 'Bộ phận của bạn được xác định tự động dựa trên hồ sơ được chọn.' : '選択されたプロファイルに基づいて、部署が自動的に決定されます。'}
-                </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[#5A5A40] text-[11px] font-bold mb-1.5 uppercase tracking-wider">
+                    {lang === 'vi' ? 'Bộ Phận Làm Việc:' : '所属部署:'}
+                  </label>
+                  <select
+                    required
+                    disabled
+                    className="w-full bg-[#F5F2EA] border border-[#E5E2D9] rounded-xl px-3.5 py-3 text-xs text-[#5A5A40]/80 font-bold cursor-not-allowed outline-none select-none"
+                    value={employeeDepartment}
+                  >
+                    <option value="">{lang === 'vi' ? '-- Bộ phận tự động điền --' : '-- 部署は自動入力されます --'}</option>
+                    {departmentsList.map(dept => (
+                      <option key={dept} value={dept}>{dept}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[#5A5A40] text-[11px] font-bold mb-1.5 uppercase tracking-wider">
+                    {lang === 'vi' ? 'Đội Nhóm (Team):' : '所属チーム:'}
+                  </label>
+                  <input
+                    type="text"
+                    disabled
+                    placeholder={lang === 'vi' ? 'Chưa phân nhóm' : 'チーム未分類'}
+                    className="w-full bg-[#F5F2EA] border border-[#E5E2D9] rounded-xl px-3.5 py-3 text-xs text-[#5A5A40]/80 font-bold cursor-not-allowed outline-none select-none"
+                    value={employeeTeam || (lang === 'vi' ? 'Chưa phân nhóm' : 'チーム未分類')}
+                  />
+                </div>
               </div>
+
+              <p className="text-[10px] text-[#5A5A40]/55 mt-1.5 border-t border-slate-100 pt-1.2">
+                {lang === 'vi' ? 'Hệ thống tự động xác định bộ phận và đội nhóm của bạn dựa trên hồ sơ.' : '選択されたプロファイルに基づいて、部署およびチームが自動的に入力されます。'}
+              </p>
 
               <button
                 type="submit"
@@ -1087,8 +1110,14 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
               </div>
               <div className="flex justify-between bg-transparent py-1 border-b border-[#F0EFEA]">
                 <span className="text-[#5A5A40]/70">{lang === 'vi' ? 'Phòng ban:' : '配属部門:'}</span>
-                <span className="font-extrabold text-[#1A1A1A]">{finalSubmission.employeeDepartment || currentMember?.department || 'N/A'}</span>
+                <span className="font-extrabold text-[#1A1A1A]">{finalSubmission.employeeDepartment || 'N/A'}</span>
               </div>
+              {finalSubmission.employeeTeam && (
+                <div className="flex justify-between bg-transparent py-1 border-b border-[#F0EFEA]">
+                  <span className="text-[#5A5A40]/70">{lang === 'vi' ? 'Đội nhóm:' : '所属チーム:'}</span>
+                  <span className="font-extrabold text-[#1A1A1A]">{finalSubmission.employeeTeam}</span>
+                </div>
+              )}
               <div className="flex justify-between bg-transparent py-1 border-b border-[#F0EFEA]">
                 <span className="text-[#5A5A40]/70">{lang === 'vi' ? 'Đề thi:' : '試験名:'}</span>
                 <span className="font-bold text-[#1A1A1A] truncate max-w-[200px]">{finalSubmission.examTitle}</span>
