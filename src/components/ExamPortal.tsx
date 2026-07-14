@@ -9,6 +9,7 @@ import {
   ChevronRight, ArrowLeft, Send, Award, HelpCircle, FileText, Check, ShieldAlert
 } from 'lucide-react';
 import { Exam, Submission, Member, Language } from '../types';
+import { formatDept, formatTeam } from '../lib/localization';
 import { 
   getStoredExams, getStoredSubmissions, saveSubmissions, 
   getStoredSheetsUrl, calculateScore, syncWithGoogleSheets,
@@ -538,13 +539,13 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
                     }}
                     className="w-full bg-white border border-[#E2DFD3] rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-[#5A5A40] font-bold cursor-pointer"
                   >
-                    <option value="all">{lang === 'vi' ? '--- Tất cả Team ---' : '--- すべてのチーム ---'}</option>
-                    <option value="none">{lang === 'vi' ? 'Chưa phân Team' : 'チーム未分類'}</option>
+                    <option value="all">{lang === 'vi' ? '--- Tất cả Team / すべてのチーム ---' : '--- すべてのチーム / Tất cả Team ---'}</option>
+                    <option value="none">{lang === 'vi' ? 'Chưa phân Team / チーム未分類' : 'チーム未分類 / Chưa phân Team'}</option>
                     {(() => {
                       const dept = currentMember?.department || 'IT部';
                       const list = teamsMap[dept] || [];
                       return list.map(tName => (
-                        <option key={tName} value={tName}>{tName}</option>
+                        <option key={tName} value={tName}>{formatTeam(tName, lang)}</option>
                       ));
                     })()}
                   </select>
@@ -583,11 +584,11 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
                           <div className="flex items-center flex-wrap gap-2">
                             <h3 className="font-bold text-[#1A1A1A] text-base font-serif">{ex.title}</h3>
                             <span className="bg-[#D4A373]/10 text-[#5A5A40] border border-[#D4A373]/25 text-[9px] uppercase font-bold px-2 py-0.5 rounded font-mono">
-                              🎯 {lang === 'vi' ? 'Bộ phận áp dụng' : '対象部署'}: {ex.department && ex.department !== 'All' ? ex.department : (lang === 'vi' ? 'Tất cả' : 'すべて')}
+                              🎯 {lang === 'vi' ? 'Bộ phận áp dụng' : '対象部署'}: {ex.department && ex.department !== 'All' ? formatDept(ex.department, lang) : (lang === 'vi' ? 'Tất cả' : 'すべて')}
                             </span>
                             {ex.team && (
                               <span className="bg-[#5A5A40]/10 text-[#5A5A40] border border-[#5A5A40]/25 text-[9px] uppercase font-bold px-2 py-0.5 rounded font-mono">
-                                {lang === 'vi' ? 'Đội nhóm' : '対象チーム'}: {ex.team}
+                                {lang === 'vi' ? 'Đội nhóm' : '対象チーム'}: {formatTeam(ex.team, lang)}
                               </span>
                             )}
                             {(() => {
@@ -911,7 +912,7 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
                   >
                     <option value="">{lang === 'vi' ? '-- Bộ phận tự động điền --' : '-- 部署は自動入力されます --'}</option>
                     {departmentsList.map(dept => (
-                      <option key={dept} value={dept}>{dept}</option>
+                      <option key={dept} value={dept}>{formatDept(dept, lang)}</option>
                     ))}
                   </select>
                 </div>
@@ -923,9 +924,8 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
                   <input
                     type="text"
                     disabled
-                    placeholder={lang === 'vi' ? 'Chưa phân nhóm' : 'チーム未分類'}
                     className="w-full bg-[#F5F2EA] border border-[#E5E2D9] rounded-xl px-3.5 py-3 text-xs text-[#5A5A40]/80 font-bold cursor-not-allowed outline-none select-none"
-                    value={employeeTeam || (lang === 'vi' ? 'Chưa phân nhóm' : 'チーム未分類')}
+                    value={employeeTeam ? formatTeam(employeeTeam, lang) : (lang === 'vi' ? 'Chưa phân nhóm / チーム未分類' : 'チーム未分類 / Chưa phân nhóm')}
                   />
                 </div>
               </div>
@@ -993,7 +993,9 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
               <div>
                 <span className="text-[9px] bg-[#D4A373]/30 text-[#FDFBF7] font-bold px-2 py-0.5 rounded uppercase tracking-widest font-mono">Active Session</span>
                 <h3 className="font-bold text-[#FDFBF7] text-sm mt-1 line-clamp-1 font-serif">{selectedExam.title}</h3>
-                <p className="text-[10px] text-[#E5E2D9]/80">Candidate: {employeeName} ({employeeEmail})</p>
+                <p className="text-[10px] text-[#E5E2D9]/85">
+                  {lang === 'vi' ? 'Thí sinh: ' : '受験者: '}{employeeName} ({employeeEmail}) • {formatDept(employeeDepartment, lang)}{employeeTeam ? ` / ${formatTeam(employeeTeam, lang)}` : ''}
+                </p>
               </div>
 
               {/* TIMER CRUCIAL MODULE */}
@@ -1130,12 +1132,12 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
               </div>
               <div className="flex justify-between bg-transparent py-1 border-b border-[#F0EFEA]">
                 <span className="text-[#5A5A40]/70">{lang === 'vi' ? 'Phòng ban:' : '配属部門:'}</span>
-                <span className="font-extrabold text-[#1A1A1A]">{finalSubmission.employeeDepartment || 'N/A'}</span>
+                <span className="font-extrabold text-[#1A1A1A]">{formatDept(finalSubmission.employeeDepartment || '', lang) || 'N/A'}</span>
               </div>
               {finalSubmission.employeeTeam && (
                 <div className="flex justify-between bg-transparent py-1 border-b border-[#F0EFEA]">
                   <span className="text-[#5A5A40]/70">{lang === 'vi' ? 'Đội nhóm:' : '所属チーム:'}</span>
-                  <span className="font-extrabold text-[#1A1A1A]">{finalSubmission.employeeTeam}</span>
+                  <span className="font-extrabold text-[#1A1A1A]">{formatTeam(finalSubmission.employeeTeam, lang)}</span>
                 </div>
               )}
               <div className="flex justify-between bg-transparent py-1 border-b border-[#F0EFEA]">
