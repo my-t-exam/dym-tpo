@@ -61,8 +61,8 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   // User answer sheets state
-  const [answers, setAnswers] = useState<Record<string, number[]>>({});
-  const answersRef = useRef<Record<string, number[]>>({});
+  const [answers, setAnswers] = useState<Record<string, number[] | string>>({});
+  const answersRef = useRef<Record<string, number[] | string>>({});
 
   useEffect(() => {
     answersRef.current = answers;
@@ -258,7 +258,7 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
 
   // Select answers helpers
   const handleSelectOption = (questionId: string, qType: 'single' | 'multiple', optionIdx: number) => {
-    const current = answers[questionId] || [];
+    const current = Array.isArray(answers[questionId]) ? (answers[questionId] as number[]) : [];
     
     if (qType === 'single') {
       setAnswers({
@@ -278,6 +278,13 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
         });
       }
     }
+  };
+
+  const handleEssayChange = (questionId: string, value: string) => {
+    setAnswers({
+      ...answers,
+      [questionId]: value
+    });
   };
 
   // Auto-Submit Function (When Timer Hits Zero)
@@ -1002,7 +1009,7 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
             {/* Exam Content list */}
             <div className="p-6 sm:p-8 space-y-8" id="active-exam-questions">
               {selectedExam.questions.map((q, idx) => {
-                const isSelectedList = answers[q.id] || [];
+                const isSelectedList = Array.isArray(answers[q.id]) ? (answers[q.id] as number[]) : [];
 
                 return (
                   <div key={q.id} className="border-b border-[#F0EFEA] pb-6 last:border-b-0 last:pb-0" id={`question-box-${q.id}`}>
@@ -1015,45 +1022,58 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
                           {q.text} <span className="text-xs font-semibold text-slate-500 normal-case ml-1">({q.points} {t.points})</span>
                         </h4>
                         <span className="text-[10px] bg-[#F9F8F5] border border-[#E5E2D9] text-[#5A5A40] font-extrabold px-2.5 py-0.5 rounded-md mt-1.5 inline-block uppercase">
-                          {q.type === 'single' ? t.singleChoiceDesc : t.multiChoiceDesc}
+                          {q.type === 'single' 
+                            ? t.singleChoiceDesc 
+                            : q.type === 'multiple' 
+                            ? t.multiChoiceDesc 
+                            : (lang === 'vi' ? 'Tự luận' : '記述式')}
                         </span>
                       </div>
                     </div>
 
                     <div className="mt-4 space-y-2 max-w-2xl pl-8">
-                      {q.options.map((option, optIdx) => {
-                        const isChecked = isSelectedList.includes(optIdx);
+                      {q.type === 'essay' ? (
+                        <textarea
+                          placeholder={lang === 'vi' ? 'Nhập câu trả lời tự luận của bạn tại đây...' : 'ここに記述式の回答を入力してください...'}
+                          className="w-full min-h-[120px] bg-white border border-[#E5E2D9] focus:border-[#5A5A40] rounded-xl p-4 text-xs font-medium text-[#1A1A1A] outline-none resize-y"
+                          value={typeof answers[q.id] === 'string' ? (answers[q.id] as string) : ''}
+                          onChange={(e) => handleEssayChange(q.id, e.target.value)}
+                        />
+                      ) : (
+                        q.options.map((option, optIdx) => {
+                          const isChecked = isSelectedList.includes(optIdx);
 
-                        return (
-                          <div 
-                            key={optIdx}
-                            onClick={() => handleSelectOption(q.id, q.type, optIdx)}
-                            className={`border rounded-xl p-3.5 items-center gap-3 cursor-pointer transition flex justify-between ${
-                              isChecked 
-                                ? 'border-[#5A5A40] bg-[#5A5A40]/5 text-[#1A1A1A] font-medium' 
-                                : 'border-[#E5E2D9] bg-white text-slate-700 hover:border-[#D4A373] hover:bg-[#F9F8F5]/30'
-                            }`}
-                          >
-                            <div className="flex items-center gap-3">
-                              {/* Custom Radio/Checkbox Visual elements */}
-                              {q.type === 'single' ? (
-                                <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                                  isChecked ? 'border-[#5A5A40] bg-[#5A5A40]' : 'border-[#E5E2D9] bg-white'
-                                }`}>
-                                  {isChecked && <div className="w-1.5 h-1.5 rounded-full bg-white"></div>}
-                                </div>
-                              ) : (
-                                <div className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 ${
-                                  isChecked ? 'border-[#5A5A40] bg-[#5A5A40]' : 'border-[#E5E2D9] bg-white'
-                                }`}>
-                                  {isChecked && <CheckCircle className="w-3 h-3 text-white stroke-[3px]" />}
-                                </div>
-                              )}
-                              <span className="text-sm leading-relaxed whitespace-pre-wrap">{option}</span>
+                          return (
+                            <div 
+                              key={optIdx}
+                              onClick={() => handleSelectOption(q.id, q.type, optIdx)}
+                              className={`border rounded-xl p-3.5 items-center gap-3 cursor-pointer transition flex justify-between ${
+                                isChecked 
+                                  ? 'border-[#5A5A40] bg-[#5A5A40]/5 text-[#1A1A1A] font-medium' 
+                                  : 'border-[#E5E2D9] bg-white text-slate-700 hover:border-[#D4A373] hover:bg-[#F9F8F5]/30'
+                              }`}
+                            >
+                              <div className="flex items-center gap-3">
+                                {/* Custom Radio/Checkbox Visual elements */}
+                                {q.type === 'single' ? (
+                                  <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                                    isChecked ? 'border-[#5A5A40] bg-[#5A5A40]' : 'border-[#E5E2D9] bg-white'
+                                  }`}>
+                                    {isChecked && <div className="w-1.5 h-1.5 rounded-full bg-white"></div>}
+                                  </div>
+                                ) : (
+                                  <div className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 ${
+                                    isChecked ? 'border-[#5A5A40] bg-[#5A5A40]' : 'border-[#E5E2D9] bg-white'
+                                  }`}>
+                                    {isChecked && <CheckCircle className="w-3 h-3 text-white stroke-[3px]" />}
+                                  </div>
+                                )}
+                                <span className="text-sm leading-relaxed whitespace-pre-wrap">{option}</span>
+                              </div>
                             </div>
-                          </div>
-                        );
-                      })}
+                          );
+                        })
+                      )}
                     </div>
                   </div>
                 );
@@ -1175,9 +1195,12 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
                 {lang === 'vi' ? 'Chi tiết đáp án & Điểm thành phần:' : '回答詳細と配点:'}
               </h3>
               {selectedExam.questions.map((q, idx) => {
-                const userSelected = finalSubmission.answers[q.id] || [];
-                const correct = q.correctAnswers;
-                const matches = userSelected.length === correct.length && userSelected.every(v => correct.includes(v));
+                const userSelected = finalSubmission.answers[q.id];
+                const isEssay = q.type === 'essay';
+                const correct = q.correctAnswers || [];
+                const matches = isEssay
+                  ? true
+                  : Array.isArray(userSelected) && userSelected.length === correct.length && userSelected.every(v => correct.includes(v));
 
                 return (
                   <div key={q.id} className="border border-[#E5E2D9] rounded-xl p-4 bg-[#F9F8F5]/25">
@@ -1186,43 +1209,59 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
                         <strong>{lang === 'vi' ? `Câu hỏi ${idx + 1}:` : `問${idx + 1}:`}</strong> {q.text}
                       </span>
                       <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded uppercase ${
-                        matches ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-rose-50 text-rose-700 border border-rose-100'
+                        isEssay
+                          ? 'bg-[#5A5A40]/10 text-[#5A5A40] border border-[#5A5A40]/20'
+                          : matches ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-rose-50 text-rose-700 border border-rose-100'
                       }`}>
-                        {matches 
-                          ? (lang === 'vi' ? 'Đúng' : '正解') 
-                          : (lang === 'vi' ? 'Sai' : '不正解')
+                        {isEssay
+                          ? (lang === 'vi' ? 'Tự luận' : '記述式')
+                          : matches 
+                            ? (lang === 'vi' ? 'Đúng' : '正解') 
+                            : (lang === 'vi' ? 'Sai' : '不正解')
                         }
                       </span>
                     </div>
 
                     <div className="mt-3 space-y-1.5 pl-4 border-l-2 border-[#E5E2D9]">
-                      {q.options.map((opt, optIdx) => {
-                        const isChosen = userSelected.includes(optIdx);
-                        const isCorrectOpt = correct.includes(optIdx);
+                      {isEssay ? (
+                        <div className="text-xs">
+                          <span className="text-[10px] text-slate-400 font-bold block mb-1">
+                            {lang === 'vi' ? 'Câu trả lời của bạn:' : 'あなたの回答:'}
+                          </span>
+                          <p className="bg-white border border-[#E5E2D9] rounded-lg p-3 text-slate-700 whitespace-pre-wrap font-medium">
+                            {typeof userSelected === 'string' ? userSelected : (lang === 'vi' ? '(Chưa trả lời)' : '(未回答)')}
+                          </p>
+                        </div>
+                      ) : (
+                        q.options.map((opt, optIdx) => {
+                          const userSelectedArr = Array.isArray(userSelected) ? userSelected : [];
+                          const isChosen = userSelectedArr.includes(optIdx);
+                          const isCorrectOpt = correct.includes(optIdx);
 
-                        let appearance = 'text-slate-600 text-sm';
-                        if (isChosen && isCorrectOpt) {
-                          appearance = 'text-emerald-700 font-bold flex items-center gap-1.5';
-                        } else if (isChosen && !isCorrectOpt) {
-                          appearance = 'text-rose-600 font-bold flex items-center gap-1.5';
-                        } else if (!isChosen && isCorrectOpt) {
-                          appearance = 'text-[#5A5A40] font-bold flex items-center gap-1.5';
-                        }
+                          let appearance = 'text-slate-600 text-sm';
+                          if (isChosen && isCorrectOpt) {
+                            appearance = 'text-emerald-700 font-bold flex items-center gap-1.5';
+                          } else if (isChosen && !isCorrectOpt) {
+                            appearance = 'text-rose-600 font-bold flex items-center gap-1.5';
+                          } else if (!isChosen && isCorrectOpt) {
+                            appearance = 'text-[#5A5A40] font-bold flex items-center gap-1.5';
+                          }
 
-                        return (
-                          <div key={optIdx} className="text-sm py-0.5 flex flex-wrap items-center gap-2">
-                            <span className={`${appearance} whitespace-pre-wrap`}>{opt}</span>
-                            <div className="flex gap-1 text-[8px] font-bold">
-                              {isChosen && <span className="bg-[#5A5A40]/10 border border-[#5A5A40]/20 px-1 py-0.2 rounded text-[#5A5A40]">
-                                {t.userSelected}
-                              </span>}
-                              {isCorrectOpt && <span className="bg-emerald-50 border border-emerald-150 px-1 py-0.2 rounded text-emerald-700">
-                                {t.correctAnswer}
-                              </span>}
+                          return (
+                            <div key={optIdx} className="text-sm py-0.5 flex flex-wrap items-center gap-2">
+                              <span className={`${appearance} whitespace-pre-wrap`}>{opt}</span>
+                              <div className="flex gap-1 text-[8px] font-bold">
+                                {isChosen && <span className="bg-[#5A5A40]/10 border border-[#5A5A40]/20 px-1 py-0.2 rounded text-[#5A5A40]">
+                                  {t.userSelected}
+                                </span>}
+                                {isCorrectOpt && <span className="bg-emerald-50 border border-emerald-150 px-1 py-0.2 rounded text-emerald-700">
+                                  {t.correctAnswer}
+                                </span>}
+                              </div>
                             </div>
-                          </div>
-                        );
-                      })}
+                          );
+                        })
+                      )}
                     </div>
                   </div>
                 );

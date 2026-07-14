@@ -459,9 +459,23 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
     setFormQuestions(q);
   };
 
-  const updateQuestionType = (index: number, type: 'single' | 'multiple') => {
+  const updateQuestionType = (index: number, type: 'single' | 'multiple' | 'essay') => {
     const q = [...formQuestions];
     q[index].type = type;
+    if (type === 'essay') {
+      q[index].options = [];
+      q[index].correctAnswers = [];
+    } else {
+      if (!q[index].options || q[index].options.length === 0) {
+        q[index].options = [
+          lang === 'vi' ? 'Lựa chọn phương án 1' : '選択肢 1',
+          lang === 'vi' ? 'Lựa chọn phương án 2' : '選択肢 2'
+        ];
+      }
+      if (!q[index].correctAnswers || q[index].correctAnswers.length === 0) {
+        q[index].correctAnswers = [0];
+      }
+    }
     setFormQuestions(q);
   };
 
@@ -3495,99 +3509,107 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
             <div>
               <span className="text-[10px] text-slate-400 font-bold block uppercase">
                 {editingExamId === 'new' 
-                  ? (lang === 'vi' ? 'SOẠN THẢO ĐỀ THI MỚI' : '新規試験問題作成')
-                  : (lang === 'vi' ? 'CẬP NHẬT ĐỀ THI' : '試験問題更新')}
-              </span>
-              <h2 className="text-xl font-bold font-serif text-slate-900 mt-0.5">
-                {lang === 'vi' ? 'Biên soạn Đề Khảo Sát Tự Động Chấm' : '試験問題の作成・自動採点設定'}
-              </h2>
-            </div>
-            
-            <button
-              onClick={() => setEditingExamId(null)}
-              className="text-slate-400 hover:text-slate-600 transition cursor-pointer text-xs font-bold inline-flex items-center gap-1"
-            >
-              <X className="w-4 h-4" />
-              {t.btnDiscard}
-            </button>
-          </div>
+                  ? (lang === 'vi' ? 'SOẠN THẢO ĐỀ THI M�                      <div className="md:col-span-3">
+                        <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">{lang === 'vi' ? 'Loại hình trả lời' : '解答方式'}</label>
+                        <div className="flex flex-wrap gap-4">
+                          <label className="flex items-center gap-1.5 cursor-pointer text-xs font-semibold">
+                            <input
+                              type="radio"
+                              name={`type-${q.id}`}
+                              checked={q.type === 'single'}
+                              onChange={() => updateQuestionType(qIdx, 'single')}
+                              className="text-[#5A5A40] focus:ring-[#5A5A40]"
+                            />
+                            {lang === 'vi' ? 'Trắc nghiệm 1 đáp án đúng (Radio)' : '単一選択 (ラジオボタン)'}
+                          </label>
+                          <label className="flex items-center gap-1.5 cursor-pointer text-xs font-semibold">
+                            <input
+                              type="radio"
+                              name={`type-${q.id}`}
+                              checked={q.type === 'multiple'}
+                              onChange={() => updateQuestionType(qIdx, 'multiple')}
+                              className="text-[#5A5A40] focus:ring-[#5A5A40]"
+                            />
+                            {lang === 'vi' ? 'Trắc nghiệm chọn nhiều đáp án đúng (Checkbox)' : '複数選択 (チェックボックス)'}
+                          </label>
+                          <label className="flex items-center gap-1.5 cursor-pointer text-xs font-semibold">
+                            <input
+                              type="radio"
+                              name={`type-${q.id}`}
+                              checked={q.type === 'essay'}
+                              onChange={() => updateQuestionType(qIdx, 'essay')}
+                              className="text-[#5A5A40] focus:ring-[#5A5A40]"
+                            />
+                            {lang === 'vi' ? 'Tự luận (Nhập văn bản)' : '記述式 (自由テキスト入力)'}
+                          </label>
+                        </div>
+                      </div>
+                    </div>
 
-          <form onSubmit={handleSaveExam} className="space-y-6 text-xs font-semibold text-slate-700">
-            
-            {/* GENERAL SECTION INFORMATION */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="md:col-span-2">
-                <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1">{t.examTitle} (*)</label>
-                <input
-                  type="text"
-                  required
-                  placeholder={lang === 'vi' ? 'Ví dụ: Đánh giá Năng lực Kỹ sư Cầu nối Việt Nhật tháng 6' : '例：6月度ブリッジSE評価テスト'}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs outline-none focus:border-[#5A5A40] font-bold"
-                  value={formTitle}
-                  onChange={(e) => setFormTitle(e.target.value)}
-                />
-              </div>
+                    {/* Options list selection */}
+                    {q.type === 'essay' ? (
+                      <div className="pl-4 border-l-2 border-[#D4A373] bg-[#FDFBF7]/40 p-3 rounded-lg text-xs text-[#5A5A40] italic">
+                        {lang === 'vi' 
+                          ? '💡 Câu hỏi tự luận không có danh sách lựa chọn phương án. Người dự thi sẽ nhập văn bản tự do làm câu trả lời.' 
+                          : '💡 記述式問題には選択肢はありません。受験者は自由形式のテキストで回答を入力します。'}
+                      </div>
+                    ) : (
+                      <div className="space-y-2 pl-4 border-l-2 border-[#E5E2D9]">
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="block text-[10px] text-slate-400 uppercase font-bold">
+                            {lang === 'vi' ? 'Danh sách các lựa chọn (Đánh dấu tích để nạp đáp án đúng)' : '選択肢リスト (自動採点用の正答にチェックマークを入れてください)'}
+                          </label>
+                          
+                          <button
+                            type="button"
+                            onClick={() => addOptionToQuestion(qIdx)}
+                            className="text-[10px] text-[#5A5A40] hover:underline cursor-pointer font-bold"
+                          >
+                            + {lang === 'vi' ? 'Thêm phương án' : '選択肢を増やす'}
+                          </button>
+                        </div>
 
-              <div className="md:col-span-2">
-                <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1">{t.examDescription}</label>
-                <textarea
-                  placeholder={lang === 'vi' ? 'Mô tả tóm tắt mục đích khảo thí...' : '試験目的の概要説明...'}
-                  rows={2}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs outline-none focus:border-[#5A5A40] font-medium resize-none"
-                  value={formDescription}
-                  onChange={(e) => setFormDescription(e.target.value)}
-                />
-              </div>
+                        {q.options.map((option, optIdx) => {
+                          const isCorrect = q.correctAnswers.includes(optIdx);
 
-              {/* TIMELINE FIELDS */}
-              <div>
-                <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1 flex items-center gap-1">
-                  <Calendar className="w-3.5 h-3.5 text-[#D4A373]" />
-                  {t.startTime} (*)
-                </label>
-                <input
-                  type="datetime-local"
-                  required
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus:border-[#5A5A40]"
-                  value={formStartTime}
-                  onChange={(e) => setFormStartTime(e.target.value)}
-                />
-              </div>
+                          return (
+                            <div key={optIdx} className="flex items-center gap-2">
+                              {/* Check mark toggle */}
+                              <button
+                                type="button"
+                                onClick={() => toggleOptionCorrectness(qIdx, optIdx)}
+                                className={`p-1.5 border rounded-lg shrink-0 transition cursor-pointer ${
+                                  isCorrect 
+                                    ? 'bg-[#5A5A40]/10 border-[#5A5A40] text-[#5A5A40]' 
+                                    : 'bg-white border-slate-200 text-slate-300 hover:border-[#D4A373]'
+                                }`}
+                                title={lang === 'vi' ? 'Đặt làm đáp án đúng' : '正解解答としてマーク'}
+                              >
+                                <Check className="w-3.5 h-3.5 stroke-[3px]" />
+                              </button>
 
-              <div>
-                <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1 flex items-center gap-1">
-                  <Calendar className="w-3.5 h-3.5 text-[#D4A373]" />
-                  {t.endTime} (*)
-                </label>
-                <input
-                  type="datetime-local"
-                  required
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus:border-[#5A5A40]"
-                  value={formEndTime}
-                  onChange={(e) => setFormEndTime(e.target.value)}
-                />
-              </div>
+                              <textarea
+                                required
+                                rows={1}
+                                placeholder={lang === 'vi' ? 'Nhập phương án trả lời...' : '選択肢を入力してください...'}
+                                className="grow bg-white border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-[#5A5A40] font-medium resize-y"
+                                value={option}
+                                onChange={(e) => updateOptionText(qIdx, optIdx, e.target.value)}
+                              />
 
-              <div>
-                <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1 flex items-center gap-1">
-                  <Clock className="w-3.5 h-3.5 text-[#D4A373]" />
-                  {lang === 'vi' ? 'Thời lượng làm bài (Phút)' : '制限時間 (分)'} (*)
-                </label>
-                <input
-                  type="number"
-                  required
-                  min={1}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus:border-[#5A5A40] font-bold"
-                  value={formDuration}
-                  onChange={(e) => setFormDuration(Number(e.target.value) || 1)}
-                />
-              </div>
-
-              <div>
-                <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1 flex items-center gap-1">
-                  <Building2 className="w-3.5 h-3.5 text-[#D4A373]" />
-                  {lang === 'vi' ? 'Bộ phận áp dụng đề thi' : '対象部署'} (*)
-                </label>
+                              <button
+                                type="button"
+                                onClick={() => removeOptionFromQuestion(qIdx, optIdx)}
+                                className="text-slate-300 hover:text-red-500 transition cursor-pointer p-1"
+                                title="Xóa lựa chọn"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}          </label>
                 <select
                   className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus:border-[#5A5A40] font-bold cursor-pointer"
                   value={formDepartment}
