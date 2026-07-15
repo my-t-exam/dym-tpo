@@ -459,9 +459,20 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
     setFormQuestions(q);
   };
 
-  const updateQuestionType = (index: number, type: 'single' | 'multiple') => {
+  const updateQuestionType = (index: number, type: 'single' | 'multiple' | 'essay') => {
     const q = [...formQuestions];
     q[index].type = type;
+    if (type === 'essay') {
+      q[index].options = [];
+      q[index].correctAnswers = [];
+    } else if (q[index].options.length === 0) {
+      // Re-populate with defaults if it was an essay before
+      q[index].options = [
+        lang === 'vi' ? 'Lựa chọn phương án 1' : '選択肢 1',
+        lang === 'vi' ? 'Lựa chọn phương án 2' : '選択肢 2'
+      ];
+      q[index].correctAnswers = [0];
+    }
     setFormQuestions(q);
   };
 
@@ -3694,12 +3705,12 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
 
                       <div className="md:col-span-3">
                         <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">{lang === 'vi' ? 'Loại hình trả lời' : '解答方式'}</label>
-                        <div className="flex gap-4">
+                        <div className="flex flex-wrap gap-4">
                           <label className="flex items-center gap-1.5 cursor-pointer text-xs font-semibold">
                             <input
                               type="radio"
                               name={`type-${q.id}`}
-                              checked={isSingle}
+                              checked={q.type === 'single'}
                               onChange={() => updateQuestionType(qIdx, 'single')}
                               className="text-[#5A5A40] focus:ring-[#5A5A40]"
                             />
@@ -3709,72 +3720,84 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                             <input
                               type="radio"
                               name={`type-${q.id}`}
-                              checked={!isSingle}
+                              checked={q.type === 'multiple'}
                               onChange={() => updateQuestionType(qIdx, 'multiple')}
                               className="text-[#5A5A40] focus:ring-[#5A5A40]"
                             />
                             {lang === 'vi' ? 'Trắc nghiệm chọn nhiều đáp án đúng (Checkbox)' : '複数選択 (チェックボックス)'}
                           </label>
+                          <label className="flex items-center gap-1.5 cursor-pointer text-xs font-semibold">
+                            <input
+                              type="radio"
+                              name={`type-${q.id}`}
+                              checked={q.type === 'essay'}
+                              onChange={() => updateQuestionType(qIdx, 'essay')}
+                              className="text-[#5A5A40] focus:ring-[#5A5A40]"
+                            />
+                            {lang === 'vi' ? 'Tự luận' : '記述式'}
+                          </label>
                         </div>
                       </div>
                     </div>
 
-                    {/* Options list selection */}
-                    <div className="space-y-2 pl-4 border-l-2 border-[#E5E2D9]">
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="block text-[10px] text-slate-400 uppercase font-bold">
-                          {lang === 'vi' ? 'Danh sách các lựa chọn (Đánh dấu tích để nạp đáp án đúng)' : '選択肢リスト (自動採点用の正答にチェックマークを入れてください)'}
-                        </label>
-                        
-                        <button
-                          type="button"
-                          onClick={() => addOptionToQuestion(qIdx)}
-                          className="text-[10px] text-[#5A5A40] hover:underline cursor-pointer font-bold"
-                        >
-                          + {lang === 'vi' ? 'Thêm phương án' : '選択肢を増やす'}
-                        </button>
+                    {/* Options list selection (hidden if essay question) */}
+                    {q.type !== 'essay' && (
+                      <div className="space-y-2 pl-4 border-l-2 border-[#E5E2D9]">
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="block text-[10px] text-slate-400 uppercase font-bold">
+                            {lang === 'vi' ? 'Danh sách các lựa chọn (Đánh dấu tích để nạp đáp án đúng)' : '選択肢リスト (自動採点用の正答にチェックマークを入れてください)'}
+                          </label>
+                          
+                          <button
+                            type="button"
+                            onClick={() => addOptionToQuestion(qIdx)}
+                            className="text-[10px] text-[#5A5A40] hover:underline cursor-pointer font-bold"
+                          >
+                            + {lang === 'vi' ? 'Thêm phương án' : '選択肢を増やす'}
+                          </button>
+                        </div>
+
+                        {q.options.map((option, optIdx) => {
+                          const isCorrect = q.correctAnswers.includes(optIdx);
+
+                          return (
+                            <div key={optIdx} className="flex items-center gap-2">
+                              {/* Check mark toggle */}
+                              <button
+                                type="button"
+                                onClick={() => toggleOptionCorrectness(qIdx, optIdx)}
+                                className={`p-1.5 border rounded-lg shrink-0 transition cursor-pointer ${
+                                  isCorrect 
+                                    ? 'bg-[#5A5A40]/10 border-[#5A5A40] text-[#5A5A40]' 
+                                    : 'bg-white border-slate-200 text-slate-300 hover:border-[#D4A373]'
+                                }`}
+                                title={lang === 'vi' ? 'Đặt làm đáp án đúng' : '正解解答としてマーク'}
+                              >
+                                <Check className="w-3.5 h-3.5 stroke-[3px]" />
+                              </button>
+
+                              <textarea
+                                required
+                                rows={1}
+                                placeholder={lang === 'vi' ? 'Nhập phương án trả lời...' : '選択肢を入力してください...'}
+                                className="grow bg-white border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-[#5A5A40] font-medium resize-y"
+                                value={option}
+                                onChange={(e) => updateOptionText(qIdx, optIdx, e.target.value)}
+                              />
+
+                              <button
+                                type="button"
+                                onClick={() => removeOptionFromQuestion(qIdx, optIdx)}
+                                className="text-slate-300 hover:text-red-500 transition cursor-pointer p-1"
+                                title="Xóa lựa chọn"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          );
+                        })}
                       </div>
-
-                      {q.options.map((option, optIdx) => {
-                        const isCorrect = q.correctAnswers.includes(optIdx);
-
-                        return (
-                          <div key={optIdx} className="flex items-center gap-2">
-                            {/* Check mark toggle */}
-                            <button
-                              type="button"
-                              onClick={() => toggleOptionCorrectness(qIdx, optIdx)}
-                              className={`p-1.5 border rounded-lg shrink-0 transition cursor-pointer ${
-                                isCorrect 
-                                  ? 'bg-[#5A5A40]/10 border-[#5A5A40] text-[#5A5A40]' 
-                                  : 'bg-white border-slate-200 text-slate-300 hover:border-[#D4A373]'
-                              }`}
-                              title={lang === 'vi' ? 'Đặt làm đáp án đúng' : '正解解答としてマーク'}
-                            >
-                              <Check className="w-3.5 h-3.5 stroke-[3px]" />
-                            </button>
-
-                            <textarea
-                              required
-                              rows={1}
-                              placeholder={lang === 'vi' ? 'Nhập phương án trả lời...' : '選択肢を入力してください...'}
-                              className="grow bg-white border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-[#5A5A40] font-medium resize-y"
-                              value={option}
-                              onChange={(e) => updateOptionText(qIdx, optIdx, e.target.value)}
-                            />
-
-                            <button
-                              type="button"
-                              onClick={() => removeOptionFromQuestion(qIdx, optIdx)}
-                              className="text-slate-300 hover:text-red-500 transition cursor-pointer p-1"
-                              title="Xóa lựa chọn"
-                            >
-                              <X className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
+                    )}
 
                   </div>
                 );
@@ -3864,42 +3887,61 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                       <span className="font-bold text-slate-900 text-xs whitespace-pre-wrap">
                         {lang === 'vi' ? `Câu ${qIndex + 1}:` : `問 ${qIndex + 1}:`} {q.text}
                       </span>
-                      <span className={`text-[9px] font-bold px-2 py-0.5 rounded shrink-0 ${
-                        correctMatches ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-rose-50 text-rose-700 border border-rose-100'
-                      }`}>
-                        {correctMatches ? (lang === 'vi' ? 'Đúng' : '正解') : (lang === 'vi' ? 'Sai' : '不正解')}
-                      </span>
+                      {q.type === 'essay' ? (
+                        <span className="text-[9px] font-bold px-2 py-0.5 rounded shrink-0 bg-blue-50 text-blue-700 border border-blue-100">
+                          {lang === 'vi' ? 'Tự luận' : '記述式'}
+                        </span>
+                      ) : (
+                        <span className={`text-[9px] font-bold px-2 py-0.5 rounded shrink-0 ${
+                          correctMatches ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-rose-50 text-rose-700 border border-rose-100'
+                        }`}>
+                          {correctMatches ? (lang === 'vi' ? 'Đúng' : '正解') : (lang === 'vi' ? 'Sai' : '不正解')}
+                        </span>
+                      )}
                     </div>
 
-                    <div className="mt-3 space-y-1.5 pl-4 border-l-2 border-slate-200 text-xs">
-                      {q.options.map((opt, oIdx) => {
-                        const isChosen = userChoice.includes(oIdx);
-                        const isCorrectOpt = correct.includes(oIdx);
+                    {q.type === 'essay' ? (
+                      <div className="mt-3 pl-4 border-l-2 border-slate-200 text-xs">
+                        <span className="block text-slate-400 font-bold uppercase text-[9px] mb-1">
+                          {lang === 'vi' ? 'Câu trả lời của người thi:' : '受検者の回答:'}
+                        </span>
+                        <div className="bg-slate-100/70 border border-slate-200 rounded-lg p-3 text-slate-800 font-medium whitespace-pre-wrap leading-relaxed">
+                          {typeof userChoice[0] === 'string'
+                            ? userChoice[0]
+                            : (lang === 'vi' ? '(Chưa trả lời)' : '(未回答)')}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="mt-3 space-y-1.5 pl-4 border-l-2 border-slate-200 text-xs">
+                        {q.options.map((opt, oIdx) => {
+                          const isChosen = userChoice.includes(oIdx);
+                          const isCorrectOpt = correct.includes(oIdx);
 
-                        let flagColor = 'text-slate-600';
-                        if (isChosen && isCorrectOpt) {
-                          flagColor = 'text-emerald-700 font-extrabold';
-                        } else if (isChosen && !isCorrectOpt) {
-                          flagColor = 'text-rose-600 font-bold';
-                        } else if (!isChosen && isCorrectOpt) {
-                          flagColor = 'text-slate-700 font-bold';
-                        }
+                          let flagColor = 'text-slate-600';
+                          if (isChosen && isCorrectOpt) {
+                            flagColor = 'text-emerald-700 font-extrabold';
+                          } else if (isChosen && !isCorrectOpt) {
+                            flagColor = 'text-rose-600 font-bold';
+                          } else if (!isChosen && isCorrectOpt) {
+                            flagColor = 'text-slate-700 font-bold';
+                          }
 
-                        return (
-                          <div key={oIdx} className="flex items-center gap-2 py-0.5">
-                            <span className={`${flagColor} whitespace-pre-wrap`}>{opt}</span>
-                            <div className="flex gap-1 text-[8px] font-bold">
-                              {isChosen && <span className="bg-[#5A5A40]/10 border border-[#5A5A40]/20 px-1 py-0.2 rounded text-[#5A5A40] text-[8px]">
-                                {t.userSelected}
-                              </span>}
-                              {isCorrectOpt && <span className="bg-emerald-50 border border-emerald-150 px-1 py-0.2 rounded text-emerald-700 text-[8px]">
-                                {t.correctAnswer}
-                              </span>}
+                          return (
+                            <div key={oIdx} className="flex items-center gap-2 py-0.5">
+                              <span className={`${flagColor} whitespace-pre-wrap`}>{opt}</span>
+                              <div className="flex gap-1 text-[8px] font-bold">
+                                {isChosen && <span className="bg-[#5A5A40]/10 border border-[#5A5A40]/20 px-1 py-0.2 rounded text-[#5A5A40] text-[8px]">
+                                  {t.userSelected}
+                                </span>}
+                                {isCorrectOpt && <span className="bg-emerald-50 border border-emerald-150 px-1 py-0.2 rounded text-emerald-700 text-[8px]">
+                                  {t.correctAnswer}
+                                </span>}
+                              </div>
                             </div>
-                          </div>
-                        );
-                      })}
-                    </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 );
               })}

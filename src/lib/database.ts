@@ -543,7 +543,7 @@ export const saveSheetsUrl = (url: string) => {
 /**
  * Autogrades a submission and returns the score
  */
-export const calculateScore = (exam: Exam, answers: Record<string, number[]>): { score: number; maxScore: number } => {
+export const calculateScore = (exam: Exam, answers: Record<string, (number | string)[]>): { score: number; maxScore: number } => {
   let score = 0;
   let maxScore = 0;
 
@@ -557,12 +557,13 @@ export const calculateScore = (exam: Exam, answers: Record<string, number[]>): {
       if (selected.length === 1 && correct.length === 1 && selected[0] === correct[0]) {
         score += q.points;
       }
-    } else {
+    } else if (q.type === 'multiple') {
       // Multiple choice: must match exactly all selected choices
-      if (selected.length === correct.length && selected.every(v => correct.includes(v))) {
+      if (selected.length === correct.length && selected.every(v => typeof v === 'number' && correct.includes(v))) {
         score += q.points;
       }
     }
+    // 'essay' type is not auto-graded (0 points initially)
   });
 
   return { score, maxScore };

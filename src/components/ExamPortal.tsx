@@ -257,7 +257,7 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
   }, [screen]);
 
   // Select answers helpers
-  const handleSelectOption = (questionId: string, qType: 'single' | 'multiple', optionIdx: number) => {
+  const handleSelectOption = (questionId: string, qType: 'single' | 'multiple' | 'essay', optionIdx: number) => {
     const current = answers[questionId] || [];
     
     if (qType === 'single') {
@@ -265,7 +265,7 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
         ...answers,
         [questionId]: [optionIdx]
       });
-    } else {
+    } else if (qType === 'multiple') {
       if (current.includes(optionIdx)) {
         setAnswers({
           ...answers,
@@ -278,6 +278,13 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
         });
       }
     }
+  };
+
+  const handleEssayChange = (questionId: string, val: string) => {
+    setAnswers({
+      ...answers,
+      [questionId]: [val]
+    });
   };
 
   // Auto-Submit Function (When Timer Hits Zero)
@@ -944,29 +951,7 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
           <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm text-center" id="screen-waiting-room">
             <div className="w-14 h-14 bg-amber-50 text-amber-500 border border-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <AlertCircle className="w-8 h-8" />
-            </div>
-
-            <h2 className="text-xl font-bold text-[#1A1A1A] font-serif italic">
-               Chưa Đến Giờ Làm Bài
-            </h2>
-            <p className="text-slate-500 text-xs mt-2 max-w-md mx-auto leading-relaxed">
-              You are currently in the Waiting Lobby. The examination "{selectedExam.title}" will open precisely at:
-            </p>
-
-            <div className="my-6 inline-block bg-slate-50 border border-slate-200 rounded-xl px-6 py-4">
-              <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">{t.startTime}</div>
-              <div className="text-base font-extrabold text-[#5A5A40] mt-1">{formatDateTimeVietnamese(selectedExam.startTime)}</div>
-              {waitingCountdown && (
-                <div className="mt-3 pt-2.5 border-t border-slate-200/60">
-                  <span className="text-[10px] text-rose-500 font-bold uppercase tracking-wider block mb-0.5">
-                    Automatic countdown:
-                  </span>
-                  <span className="text-xl font-mono font-black text-rose-600 animate-pulse">{waitingCountdown}</span>
-                </div>
-              )}
-            </div>
-
-            <div className="space-y-3">
+            </div>            <div className="space-y-3">
               <button
                 onClick={() => setScreen('select-exam')}
                 className="px-5 py-2 bg-[#5A5A40]/10 hover:bg-[#5A5A40]/25 transition rounded-lg text-xs font-bold text-[#5A5A40] cursor-pointer"
@@ -1015,45 +1000,55 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
                           {q.text} <span className="text-xs font-semibold text-slate-500 normal-case ml-1">({q.points} {t.points})</span>
                         </h4>
                         <span className="text-[10px] bg-[#F9F8F5] border border-[#E5E2D9] text-[#5A5A40] font-extrabold px-2.5 py-0.5 rounded-md mt-1.5 inline-block uppercase">
-                          {q.type === 'single' ? t.singleChoiceDesc : t.multiChoiceDesc}
+                          {q.type === 'single' ? t.singleChoiceDesc : (q.type === 'essay' ? (lang === 'vi' ? 'Tự luận' : '記述式') : t.multiChoiceDesc)}
                         </span>
                       </div>
                     </div>
 
                     <div className="mt-4 space-y-2 max-w-2xl pl-8">
-                      {q.options.map((option, optIdx) => {
-                        const isChecked = isSelectedList.includes(optIdx);
+                      {q.type === 'essay' ? (
+                        <textarea
+                          rows={4}
+                          className="w-full bg-white border border-[#E5E2D9] rounded-xl p-4 text-sm outline-none focus:border-[#5A5A40] focus:ring-1 focus:ring-[#5A5A40] transition leading-relaxed text-slate-800"
+                          placeholder={lang === 'vi' ? 'Nhập câu trả lời tự luận của bạn tại đây...' : 'ここに自由記述の回答を入力してください...'}
+                          value={isSelectedList[0] || ''}
+                          onChange={(e) => handleEssayChange(q.id, e.target.value)}
+                        />
+                      ) : (
+                        q.options.map((option, optIdx) => {
+                          const isChecked = isSelectedList.includes(optIdx);
 
-                        return (
-                          <div 
-                            key={optIdx}
-                            onClick={() => handleSelectOption(q.id, q.type, optIdx)}
-                            className={`border rounded-xl p-3.5 items-center gap-3 cursor-pointer transition flex justify-between ${
-                              isChecked 
-                                ? 'border-[#5A5A40] bg-[#5A5A40]/5 text-[#1A1A1A] font-medium' 
-                                : 'border-[#E5E2D9] bg-white text-slate-700 hover:border-[#D4A373] hover:bg-[#F9F8F5]/30'
-                            }`}
-                          >
-                            <div className="flex items-center gap-3">
-                              {/* Custom Radio/Checkbox Visual elements */}
-                              {q.type === 'single' ? (
-                                <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                                  isChecked ? 'border-[#5A5A40] bg-[#5A5A40]' : 'border-[#E5E2D9] bg-white'
-                                }`}>
-                                  {isChecked && <div className="w-1.5 h-1.5 rounded-full bg-white"></div>}
-                                </div>
-                              ) : (
-                                <div className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 ${
-                                  isChecked ? 'border-[#5A5A40] bg-[#5A5A40]' : 'border-[#E5E2D9] bg-white'
-                                }`}>
-                                  {isChecked && <CheckCircle className="w-3 h-3 text-white stroke-[3px]" />}
-                                </div>
-                              )}
-                              <span className="text-sm leading-relaxed whitespace-pre-wrap">{option}</span>
+                          return (
+                            <div 
+                              key={optIdx}
+                              onClick={() => handleSelectOption(q.id, q.type, optIdx)}
+                              className={`border rounded-xl p-3.5 items-center gap-3 cursor-pointer transition flex justify-between ${
+                                isChecked 
+                                  ? 'border-[#5A5A40] bg-[#5A5A40]/5 text-[#1A1A1A] font-medium' 
+                                  : 'border-[#E5E2D9] bg-white text-slate-700 hover:border-[#D4A373] hover:bg-[#F9F8F5]/30'
+                              }`}
+                            >
+                              <div className="flex items-center gap-3">
+                                {/* Custom Radio/Checkbox Visual elements */}
+                                {q.type === 'single' ? (
+                                  <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                                    isChecked ? 'border-[#5A5A40] bg-[#5A5A40]' : 'border-[#E5E2D9] bg-white'
+                                  }`}>
+                                    {isChecked && <div className="w-1.5 h-1.5 rounded-full bg-white"></div>}
+                                  </div>
+                                ) : (
+                                  <div className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 ${
+                                    isChecked ? 'border-[#5A5A40] bg-[#5A5A40]' : 'border-[#E5E2D9] bg-white'
+                                  }`}>
+                                    {isChecked && <CheckCircle className="w-3 h-3 text-white stroke-[3px]" />}
+                                  </div>
+                                )}
+                                <span className="text-sm leading-relaxed whitespace-pre-wrap">{option}</span>
+                              </div>
                             </div>
-                          </div>
-                        );
-                      })}
+                          );
+                        })
+                      )}
                     </div>
                   </div>
                 );
