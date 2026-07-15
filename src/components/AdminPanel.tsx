@@ -7,10 +7,9 @@ import React, { useState, useEffect } from 'react';
 import { 
   Plus, Trash2, Edit, Save, Settings, Users, Clipboard, PlusCircle, 
   Trash, ArrowLeft, RefreshCw, Layers, Clock, Calendar, CheckSquare, 
-  Eye, Check, AlertTriangle, CloudLightning, ChevronRight, GraduationCap, X, Sparkles, Building2, UserCheck, Search, Database, BookOpen
+  Eye, Check, AlertTriangle, CloudLightning, ChevronRight, GraduationCap, X, Sparkles, Building2, UserCheck, Search, Database
 } from 'lucide-react';
 import { Exam, Question, Submission, Member, Language, AuditLog } from '../types';
-import { formatDept, formatTeam } from '../lib/localization';
 import { 
   getStoredExams, saveExams, getStoredSubmissions, 
   saveSubmissions, getStoredSheetsUrl, saveSheetsUrl, 
@@ -460,23 +459,9 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
     setFormQuestions(q);
   };
 
-  const updateQuestionType = (index: number, type: 'single' | 'multiple' | 'essay') => {
+  const updateQuestionType = (index: number, type: 'single' | 'multiple') => {
     const q = [...formQuestions];
     q[index].type = type;
-    if (type === 'essay') {
-      q[index].options = [];
-      q[index].correctAnswers = [];
-    } else {
-      if (!q[index].options || q[index].options.length === 0) {
-        q[index].options = [
-          lang === 'vi' ? 'Lựa chọn phương án 1' : '選択肢 1',
-          lang === 'vi' ? 'Lựa chọn phương án 2' : '選択肢 2'
-        ];
-      }
-      if (!q[index].correctAnswers || q[index].correctAnswers.length === 0) {
-        q[index].correctAnswers = [0];
-      }
-    }
     setFormQuestions(q);
   };
 
@@ -3194,18 +3179,13 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                                 stat.percentage < 45 ? 'bg-rose-500' :
                                 stat.percentage < 85 ? 'bg-amber-500' : 'bg-emerald-500';
                               return (
-                                <div key={stat.dept} className="space-y-1">
-                                  <div className="flex justify-between items-center text-xs font-bold text-slate-600">
-                                    <span className="truncate">{stat.dept}</span>
-                                    <span className="shrink-0 font-mono text-[10px] text-slate-400">
-                                      {stat.submitted}/{stat.total} {lang === 'vi' ? 'người' : '名'} ({stat.percentage}%)
-                                    </span>
+                                <div key={stat.dept} className="text-xs font-bold text-slate-600">
+                                  <div className="flex justify-between items-center mb-1">
+                                    <span className="text-slate-800">{stat.dept}</span>
+                                    <span className="font-black text-slate-700">{stat.submitted}/{stat.total} ({stat.percentage}%)</span>
                                   </div>
-                                  <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                                    <div 
-                                      className={`${indicatorColor} h-full rounded-full transition-all duration-300`} 
-                                      style={{ width: `${stat.percentage}%` }} 
-                                    />
+                                  <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden flex">
+                                    <div className={`${indicatorColor} h-full transition-all duration-500`} style={{ width: `${stat.percentage}%` }} />
                                   </div>
                                 </div>
                               );
@@ -3217,13 +3197,13 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                       {/* Team Stats */}
                       <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
                         <h4 className="font-bold text-slate-800 text-xs uppercase mb-3.5 text-slate-500 tracking-wider">
-                          {lang === 'vi' ? 'Tiến Độ Theo Nhóm/Team' : 'チームごとの受検進捗率'}
+                          {lang === 'vi' ? 'Tỉ Lệ Hoàn Thành Theo Team' : 'チームごとの受検進捗率'}
                         </h4>
 
                         <div className="space-y-3.5 max-h-[220px] overflow-y-auto pr-1">
                           {teamStats.length === 0 ? (
-                            <div className="text-center py-6 text-slate-400 text-xs font-semibold">
-                              {lang === 'vi' ? 'Không tìm thấy nhóm/team nào.' : 'チームデータがありません。'}
+                            <div className="text-center py-8 text-slate-400 text-xs font-semibold">
+                              {lang === 'vi' ? 'Chưa tìm thấy team có nhân sự nào đăng ký của bộ phận này.' : 'チーム別の進捗データがありません。'}
                             </div>
                           ) : (
                             teamStats.map(stat => {
@@ -3231,18 +3211,15 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                                 stat.percentage < 45 ? 'bg-rose-500' :
                                 stat.percentage < 85 ? 'bg-amber-500' : 'bg-emerald-500';
                               return (
-                                <div key={stat.name} className="space-y-1">
-                                  <div className="flex justify-between items-center text-xs font-bold text-slate-600">
-                                    <span className="truncate">{stat.name}</span>
-                                    <span className="shrink-0 font-mono text-[10px] text-slate-400">
-                                      {stat.submitted}/{stat.total} {lang === 'vi' ? 'người' : '名'} ({stat.percentage}%)
+                                <div key={stat.name} className="text-xs font-bold text-slate-600">
+                                  <div className="flex justify-between items-center mb-1">
+                                    <span className="text-slate-800">
+                                      {stat.name ? (lang === 'vi' ? `Team ${stat.name}` : `${stat.name}チーム`) : (lang === 'vi' ? 'Không phân nhóm' : '未所属')}
                                     </span>
+                                    <span className="font-black text-slate-700">{stat.submitted}/{stat.total} ({stat.percentage}%)</span>
                                   </div>
-                                  <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                                    <div 
-                                      className={`${indicatorColor} h-full rounded-full transition-all duration-300`} 
-                                      style={{ width: `${stat.percentage}%` }} 
-                                    />
+                                  <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden flex">
+                                    <div className={`${indicatorColor} h-full transition-all duration-500`} style={{ width: `${stat.percentage}%` }} />
                                   </div>
                                 </div>
                               );
@@ -3253,11 +3230,108 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
 
                     </div>
 
+                    {/* DYNAMIC LEADERBOARDS & DETAIL BENTOS */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      
+                      {/* TOP SCORES (LEADERBOARD) */}
+                      <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs flex flex-col justify-between">
+                        <div>
+                          <div className="border-b border-slate-100 pb-2 mb-3 flex justify-between items-center">
+                            <h4 className="font-bold text-[#5A5A40] text-xs uppercase tracking-wider flex items-center gap-1">
+                              <span>🏆</span> {lang === 'vi' ? 'Top 5 Điểm Cao Nhất' : '上位高得点メンバー (Top 5)'}
+                            </h4>
+                          </div>
+
+                          {topScorers.length === 0 ? (
+                            <div className="py-8 text-center text-slate-400 text-xs font-semibold">
+                              {lang === 'vi' ? 'Chưa có thông tin điểm số nộp bài.' : '受検実績がまだありません。'}
+                            </div>
+                          ) : (
+                            <div className="space-y-2">
+                              {topScorers.map((sub, index) => {
+                                const matchedMb = members.find(m => m.email.toLowerCase().trim() === sub.employeeEmail.toLowerCase().trim());
+                                const accuracy = Math.round((sub.score / sub.maxScore) * 100);
+                                const rankBadge = 
+                                  index === 0 ? 'bg-amber-100 text-amber-800 border-amber-300 font-serif' :
+                                  index === 1 ? 'bg-slate-100 text-slate-600 border-slate-300 font-serif' :
+                                  index === 2 ? 'bg-[#D4A373]/20 text-[#5A5A40] border-[#D4A373]/40 font-serif' : 
+                                  'bg-slate-50 text-slate-400 border-slate-200';
+                                
+                                const timeTakenStr = sub.timeTakenSeconds
+                                  ? `${Math.floor(sub.timeTakenSeconds / 60)}p ${sub.timeTakenSeconds % 60}s`
+                                  : 'N/A';
+
+                                return (
+                                  <div key={sub.id} className="p-2 bg-slate-50/50 rounded-lg border border-slate-100 flex items-center justify-between text-xs font-semibold hover:bg-slate-50 transition">
+                                    <div className="flex items-center gap-2">
+                                      <span className={`w-5 h-5 rounded-full border flex items-center justify-center text-[10px] font-black ${rankBadge}`}>
+                                        {index + 1}
+                                      </span>
+                                      <div>
+                                        <span className="font-extrabold text-slate-800 block text-[11px]">{matchedMb?.name || sub.employeeEmail}</span>
+                                        <span className="text-[9px] text-slate-400 font-semibold block">{matchedMb?.department} • {matchedMb?.team ? (lang === 'vi' ? `Team ${matchedMb.team}` : `${matchedMb.team}チーム`) : (lang === 'vi' ? 'Không phân nhóm' : '未所属')}</span>
+                                      </div>
+                                    </div>
+                                    <div className="text-right">
+                                      <span className="text-[11px] font-black text-emerald-600 block">{sub.score}/{sub.maxScore} ({accuracy}%)</span>
+                                      <span className="text-[9px] text-slate-400 font-mono block mt-0.5">⏱️ {timeTakenStr}</span>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* TOP OVERDUE / NOT COMPLETED */}
+                      <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs flex flex-col justify-between">
+                        <div>
+                          <div className="border-b border-slate-100 pb-2 mb-3 flex justify-between items-center">
+                            <h4 className="font-bold text-rose-700 text-xs uppercase tracking-wider flex items-center gap-1">
+                              <span>⚠️</span> {lang === 'vi' ? 'Ưu Tiên Đôn Đốc (Chưa Hoàn Thành)' : '未受験メンバーリスト'}
+                            </h4>
+                          </div>
+
+                          {notSubmittedMembers.length === 0 ? (
+                            <div className="py-8 text-center text-slate-400 text-xs font-semibold">
+                              {lang === 'vi' ? 'Đã hoàn thành 100%. Không có nhân sự quá hạn!' : 'すべて提出完了しました！'}
+                            </div>
+                          ) : (
+                            <div className="space-y-2">
+                              {notSubmittedMembers.slice(0, 5).map(m => (
+                                <div key={m.id} className="p-2 bg-slate-50/50 rounded-lg border border-slate-100 flex items-center justify-between text-xs font-semibold hover:bg-rose-50/20 transition">
+                                  <div>
+                                    <span className="font-extrabold text-slate-800 block text-[11px]">{m.name}</span>
+                                    <span className="text-[9px] text-slate-400 font-semibold block">{m.email}</span>
+                                  </div>
+                                  <div className="text-right">
+                                    <span className="bg-rose-50 text-rose-600 border border-rose-100 text-[8px] font-extrabold px-1.5 py-0.5 rounded uppercase">
+                                      {m.department} • {m.team ? (lang === 'vi' ? `Team ${m.team}` : `${m.team}チーム`) : (lang === 'vi' ? 'Không phân nhóm' : '未所属')}
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                              {notSubmittedMembers.length > 5 && (
+                                <div className="text-[#5A5A40] text-[10px] font-bold text-center pt-1 block cursor-pointer hover:underline" onClick={() => {
+                                  const tableEl = document.getElementById('not-submitted-detail-panel');
+                                  if (tableEl) tableEl.scrollIntoView({ behavior: 'smooth' });
+                                }}>
+                                  + {lang === 'vi' ? `Xem thêm ${notSubmittedMembers.length - 5} nhân sự phía dưới` : `他 ${notSubmittedMembers.length - 5} 名を表示中`}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                    </div>
+
                     {/* QUESTION DIFFICULTY & ERROR LEVEL ANALYSIS (THE ESSENTIAL DEMANDED FEATURE) */}
                     <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
                       <div className="border-b border-slate-150 pb-2 mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                         <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider flex items-center gap-1.5">
-                          <span>📊</span> {lang === 'vi' ? 'Đánh Giá Đột Xuất & Độ Khó Từng Câu Hỏi' : '設win別誤答率 & 難易度分析'}
+                          <span>📊</span> {lang === 'vi' ? 'Đánh Giá Đột Xuất & Độ Khó Từng Câu Hỏi' : '設問別誤答率 & 難易度分析'}
                         </h4>
                         <span className="bg-[#5A5A40]/10 text-[#5A5A40] border border-[#5A5A40]/30 font-black text-[9px] px-2 py-0.5 rounded font-mono">
                           {selectedExam.questions.length} {lang === 'vi' ? 'Câu hỏi' : '設問'}
@@ -3304,7 +3378,7 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                                     <span className="text-[9px] text-slate-300 block font-mono">({item.correctCount}/{examSubmissions.length} lượt)</span>
                                   </>
                                 ) : (
-                                  <span className="text-slate-400 text-[9px] italic font-medium">{lang === 'vi' ? 'Chưa có lượt nộp' : '受検 data なし'}</span>
+                                  <span className="text-slate-400 text-[9px] italic font-medium">{lang === 'vi' ? 'Chưa có lượt nộp' : '受検データなし'}</span>
                                 )}
                               </div>
                             </div>
@@ -3428,37 +3502,76 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                 {lang === 'vi' ? 'Biên soạn Đề Khảo Sát Tự Động Chấm' : '試験問題の作成・自動採点設定'}
               </h2>
             </div>
+            
             <button
-              type="button"
               onClick={() => setEditingExamId(null)}
-              className="text-xs text-slate-400 hover:text-slate-600 transition cursor-pointer flex items-center gap-1 font-bold"
+              className="text-slate-400 hover:text-slate-600 transition cursor-pointer text-xs font-bold inline-flex items-center gap-1"
             >
-              <ArrowLeft className="w-4 h-4" />
-              {lang === 'vi' ? 'Quay lại' : '戻る'}
+              <X className="w-4 h-4" />
+              {t.btnDiscard}
             </button>
           </div>
-          <form onSubmit={handleSaveExam} className="space-y-6">
-            {/* Exam Properties Fields */}
+
+          <form onSubmit={handleSaveExam} className="space-y-6 text-xs font-semibold text-slate-700">
+            
+            {/* GENERAL SECTION INFORMATION */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1 flex items-center gap-1">
-                  <BookOpen className="w-3.5 h-3.5 text-[#D4A373]" />
-                  {lang === 'vi' ? 'Tiêu đề đề thi (*)' : '試験タイトル (*)'}
-                </label>
+              <div className="md:col-span-2">
+                <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1">{t.examTitle} (*)</label>
                 <input
                   type="text"
                   required
-                  placeholder={lang === 'vi' ? 'Ví dụ: Khảo sát Quy trình 5S Tháng 10' : '例：10月度 5S規程・安全教育試験'}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus:border-[#5A5A40] font-bold"
+                  placeholder={lang === 'vi' ? 'Ví dụ: Đánh giá Năng lực Kỹ sư Cầu nối Việt Nhật tháng 6' : '例：6月度ブリッジSE評価テスト'}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs outline-none focus:border-[#5A5A40] font-bold"
                   value={formTitle}
                   onChange={(e) => setFormTitle(e.target.value)}
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1">{t.examDescription}</label>
+                <textarea
+                  placeholder={lang === 'vi' ? 'Mô tả tóm tắt mục đích khảo thí...' : '試験目的の概要説明...'}
+                  rows={2}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs outline-none focus:border-[#5A5A40] font-medium resize-none"
+                  value={formDescription}
+                  onChange={(e) => setFormDescription(e.target.value)}
+                />
+              </div>
+
+              {/* TIMELINE FIELDS */}
+              <div>
+                <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1 flex items-center gap-1">
+                  <Calendar className="w-3.5 h-3.5 text-[#D4A373]" />
+                  {t.startTime} (*)
+                </label>
+                <input
+                  type="datetime-local"
+                  required
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus:border-[#5A5A40]"
+                  value={formStartTime}
+                  onChange={(e) => setFormStartTime(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1 flex items-center gap-1">
+                  <Calendar className="w-3.5 h-3.5 text-[#D4A373]" />
+                  {t.endTime} (*)
+                </label>
+                <input
+                  type="datetime-local"
+                  required
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus:border-[#5A5A40]"
+                  value={formEndTime}
+                  onChange={(e) => setFormEndTime(e.target.value)}
                 />
               </div>
 
               <div>
                 <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1 flex items-center gap-1">
                   <Clock className="w-3.5 h-3.5 text-[#D4A373]" />
-                  {lang === 'vi' ? 'Thời gian làm bài (Phút) (*)' : '制限時間 (分) (*)'}
+                  {lang === 'vi' ? 'Thời lượng làm bài (Phút)' : '制限時間 (分)'} (*)
                 </label>
                 <input
                   type="number"
@@ -3466,14 +3579,14 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                   min={1}
                   className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus:border-[#5A5A40] font-bold"
                   value={formDuration}
-                  onChange={(e) => setFormDuration(parseInt(e.target.value) || 0)}
+                  onChange={(e) => setFormDuration(Number(e.target.value) || 1)}
                 />
               </div>
 
               <div>
                 <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1 flex items-center gap-1">
                   <Building2 className="w-3.5 h-3.5 text-[#D4A373]" />
-                  {lang === 'vi' ? 'Bộ phận áp dụng (*)' : '対象部署 (*)'}
+                  {lang === 'vi' ? 'Bộ phận áp dụng đề thi' : '対象部署'} (*)
                 </label>
                 <select
                   className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus:border-[#5A5A40] font-bold cursor-pointer"
@@ -3720,10 +3833,7 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
 
               <div>
                 <span className="block text-[9px] text-slate-400 uppercase font-bold">{t.employeeDept}</span>
-                <span className="text-slate-950 font-bold">
-                  {formatDept(selectedSubmission.employeeDepartment || '', lang)}
-                  {selectedSubmission.employeeTeam ? ` / ${formatTeam(selectedSubmission.employeeTeam, lang)}` : ''}
-                </span>
+                <span className="text-slate-950 font-bold">{selectedSubmission.employeeDepartment || 'N/A'}</span>
               </div>
 
               <div className="border-t border-slate-200 pt-3 mt-1.5">

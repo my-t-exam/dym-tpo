@@ -6,7 +6,7 @@
 export interface Question {
   id: string;
   text: string;
-  type: 'single' | 'multiple' | 'essay'; // single choice vs multiple choice vs essay
+  type: 'single' | 'multiple'; // single choice vs multiple choice
   options: string[];
   correctAnswers: number[]; // indices of correct option(s) (0-indexed)
   points: number; // point value of this question
@@ -34,7 +34,7 @@ export interface Submission {
   employeeEmail: string;
   employeeDepartment?: string;
   employeeTeam?: string;
-  answers: Record<string, number[] | string>; // question.id -> selected indices or essay text answer
+  answers: Record<string, number[]>; // question.id -> list of selected option indices
   score: number;
   maxScore: number;
   submittedAt: string;

@@ -543,30 +543,25 @@ export const saveSheetsUrl = (url: string) => {
 /**
  * Autogrades a submission and returns the score
  */
-export const calculateScore = (exam: Exam, answers: Record<string, number[] | string>): { score: number; maxScore: number } => {
+export const calculateScore = (exam: Exam, answers: Record<string, number[]>): { score: number; maxScore: number } => {
   let score = 0;
   let maxScore = 0;
 
   exam.questions.forEach((q) => {
     maxScore += q.points;
-    const selected = answers[q.id];
+    const selected = answers[q.id] || [];
+    const correct = q.correctAnswers;
 
     if (q.type === 'single') {
-      const selArr = Array.isArray(selected) ? selected : [];
-      const correct = q.correctAnswers || [];
       // Single choice must match exactly
-      if (selArr.length === 1 && correct.length === 1 && selArr[0] === correct[0]) {
+      if (selected.length === 1 && correct.length === 1 && selected[0] === correct[0]) {
         score += q.points;
       }
-    } else if (q.type === 'multiple') {
-      const selArr = Array.isArray(selected) ? selected : [];
-      const correct = q.correctAnswers || [];
+    } else {
       // Multiple choice: must match exactly all selected choices
-      if (selArr.length === correct.length && selArr.every(v => correct.includes(v))) {
+      if (selected.length === correct.length && selected.every(v => correct.includes(v))) {
         score += q.points;
       }
-    } else if (q.type === 'essay') {
-      // Essay questions are graded manually (automatically counted as 0 points initially)
     }
   });
 

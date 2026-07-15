@@ -9,7 +9,6 @@ import {
   ChevronRight, ArrowLeft, Send, Award, HelpCircle, FileText, Check, ShieldAlert
 } from 'lucide-react';
 import { Exam, Submission, Member, Language } from '../types';
-import { formatDept, formatTeam } from '../lib/localization';
 import { 
   getStoredExams, getStoredSubmissions, saveSubmissions, 
   getStoredSheetsUrl, calculateScore, syncWithGoogleSheets,
@@ -62,8 +61,8 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   // User answer sheets state
-  const [answers, setAnswers] = useState<Record<string, number[] | string>>({});
-  const answersRef = useRef<Record<string, number[] | string>>({});
+  const [answers, setAnswers] = useState<Record<string, number[]>>({});
+  const answersRef = useRef<Record<string, number[]>>({});
 
   useEffect(() => {
     answersRef.current = answers;
@@ -259,7 +258,7 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
 
   // Select answers helpers
   const handleSelectOption = (questionId: string, qType: 'single' | 'multiple', optionIdx: number) => {
-    const current = Array.isArray(answers[questionId]) ? (answers[questionId] as number[]) : [];
+    const current = answers[questionId] || [];
     
     if (qType === 'single') {
       setAnswers({
@@ -279,13 +278,6 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
         });
       }
     }
-  };
-
-  const handleEssayChange = (questionId: string, value: string) => {
-    setAnswers({
-      ...answers,
-      [questionId]: value
-    });
   };
 
   // Auto-Submit Function (When Timer Hits Zero)
@@ -539,13 +531,13 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
                     }}
                     className="w-full bg-white border border-[#E2DFD3] rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-[#5A5A40] font-bold cursor-pointer"
                   >
-                    <option value="all">{lang === 'vi' ? '--- Tất cả Team / すべてのチーム ---' : '--- すべてのチーム / Tất cả Team ---'}</option>
-                    <option value="none">{lang === 'vi' ? 'Chưa phân Team / チーム未分類' : 'チーム未分類 / Chưa phân Team'}</option>
+                    <option value="all">{lang === 'vi' ? '--- Tất cả Team ---' : '--- すべてのチーム ---'}</option>
+                    <option value="none">{lang === 'vi' ? 'Chưa phân Team' : 'チーム未分類'}</option>
                     {(() => {
                       const dept = currentMember?.department || 'IT部';
                       const list = teamsMap[dept] || [];
                       return list.map(tName => (
-                        <option key={tName} value={tName}>{formatTeam(tName, lang)}</option>
+                        <option key={tName} value={tName}>{tName}</option>
                       ));
                     })()}
                   </select>
@@ -584,11 +576,11 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
                           <div className="flex items-center flex-wrap gap-2">
                             <h3 className="font-bold text-[#1A1A1A] text-base font-serif">{ex.title}</h3>
                             <span className="bg-[#D4A373]/10 text-[#5A5A40] border border-[#D4A373]/25 text-[9px] uppercase font-bold px-2 py-0.5 rounded font-mono">
-                              🎯 {lang === 'vi' ? 'Bộ phận áp dụng' : '対象部署'}: {ex.department && ex.department !== 'All' ? formatDept(ex.department, lang) : (lang === 'vi' ? 'Tất cả' : 'すべて')}
+                              🎯 {lang === 'vi' ? 'Bộ phận áp dụng' : '対象部署'}: {ex.department && ex.department !== 'All' ? ex.department : (lang === 'vi' ? 'Tất cả' : 'すべて')}
                             </span>
                             {ex.team && (
                               <span className="bg-[#5A5A40]/10 text-[#5A5A40] border border-[#5A5A40]/25 text-[9px] uppercase font-bold px-2 py-0.5 rounded font-mono">
-                                {lang === 'vi' ? 'Đội nhóm' : '対象チーム'}: {formatTeam(ex.team, lang)}
+                                {lang === 'vi' ? 'Đội nhóm' : '対象チーム'}: {ex.team}
                               </span>
                             )}
                             {(() => {
@@ -912,7 +904,7 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
                   >
                     <option value="">{lang === 'vi' ? '-- Bộ phận tự động điền --' : '-- 部署は自動入力されます --'}</option>
                     {departmentsList.map(dept => (
-                      <option key={dept} value={dept}>{formatDept(dept, lang)}</option>
+                      <option key={dept} value={dept}>{dept}</option>
                     ))}
                   </select>
                 </div>
@@ -924,8 +916,9 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
                   <input
                     type="text"
                     disabled
+                    placeholder={lang === 'vi' ? 'Chưa phân nhóm' : 'チーム未分類'}
                     className="w-full bg-[#F5F2EA] border border-[#E5E2D9] rounded-xl px-3.5 py-3 text-xs text-[#5A5A40]/80 font-bold cursor-not-allowed outline-none select-none"
-                    value={employeeTeam ? formatTeam(employeeTeam, lang) : (lang === 'vi' ? 'Chưa phân nhóm / チーム未分類' : 'チーム未分類 / Chưa phân nhóm')}
+                    value={employeeTeam || (lang === 'vi' ? 'Chưa phân nhóm' : 'チーム未分類')}
                   />
                 </div>
               </div>
@@ -993,9 +986,7 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
               <div>
                 <span className="text-[9px] bg-[#D4A373]/30 text-[#FDFBF7] font-bold px-2 py-0.5 rounded uppercase tracking-widest font-mono">Active Session</span>
                 <h3 className="font-bold text-[#FDFBF7] text-sm mt-1 line-clamp-1 font-serif">{selectedExam.title}</h3>
-                <p className="text-[10px] text-[#E5E2D9]/85">
-                  {lang === 'vi' ? 'Thí sinh: ' : '受験者: '}{employeeName} ({employeeEmail}) • {formatDept(employeeDepartment, lang)}{employeeTeam ? ` / ${formatTeam(employeeTeam, lang)}` : ''}
-                </p>
+                <p className="text-[10px] text-[#E5E2D9]/80">Candidate: {employeeName} ({employeeEmail})</p>
               </div>
 
               {/* TIMER CRUCIAL MODULE */}
@@ -1011,7 +1002,7 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
             {/* Exam Content list */}
             <div className="p-6 sm:p-8 space-y-8" id="active-exam-questions">
               {selectedExam.questions.map((q, idx) => {
-                const isSelectedList = Array.isArray(answers[q.id]) ? (answers[q.id] as number[]) : [];
+                const isSelectedList = answers[q.id] || [];
 
                 return (
                   <div key={q.id} className="border-b border-[#F0EFEA] pb-6 last:border-b-0 last:pb-0" id={`question-box-${q.id}`}>
@@ -1024,58 +1015,45 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
                           {q.text} <span className="text-xs font-semibold text-slate-500 normal-case ml-1">({q.points} {t.points})</span>
                         </h4>
                         <span className="text-[10px] bg-[#F9F8F5] border border-[#E5E2D9] text-[#5A5A40] font-extrabold px-2.5 py-0.5 rounded-md mt-1.5 inline-block uppercase">
-                          {q.type === 'single' 
-                            ? t.singleChoiceDesc 
-                            : q.type === 'multiple' 
-                            ? t.multiChoiceDesc 
-                            : (lang === 'vi' ? 'Tự luận' : '記述式')}
+                          {q.type === 'single' ? t.singleChoiceDesc : t.multiChoiceDesc}
                         </span>
                       </div>
                     </div>
 
                     <div className="mt-4 space-y-2 max-w-2xl pl-8">
-                      {q.type === 'essay' ? (
-                        <textarea
-                          placeholder={lang === 'vi' ? 'Nhập câu trả lời tự luận của bạn tại đây...' : 'ここに記述式の回答を入力してください...'}
-                          className="w-full min-h-[120px] bg-white border border-[#E5E2D9] focus:border-[#5A5A40] rounded-xl p-4 text-xs font-medium text-[#1A1A1A] outline-none resize-y"
-                          value={typeof answers[q.id] === 'string' ? (answers[q.id] as string) : ''}
-                          onChange={(e) => handleEssayChange(q.id, e.target.value)}
-                        />
-                      ) : (
-                        q.options.map((option, optIdx) => {
-                          const isChecked = isSelectedList.includes(optIdx);
+                      {q.options.map((option, optIdx) => {
+                        const isChecked = isSelectedList.includes(optIdx);
 
-                          return (
-                            <div 
-                              key={optIdx}
-                              onClick={() => handleSelectOption(q.id, q.type, optIdx)}
-                              className={`border rounded-xl p-3.5 items-center gap-3 cursor-pointer transition flex justify-between ${
-                                isChecked 
-                                  ? 'border-[#5A5A40] bg-[#5A5A40]/5 text-[#1A1A1A] font-medium' 
-                                  : 'border-[#E5E2D9] bg-white text-slate-700 hover:border-[#D4A373] hover:bg-[#F9F8F5]/30'
-                              }`}
-                            >
-                              <div className="flex items-center gap-3">
-                                {/* Custom Radio/Checkbox Visual elements */}
-                                {q.type === 'single' ? (
-                                  <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                                    isChecked ? 'border-[#5A5A40] bg-[#5A5A40]' : 'border-[#E5E2D9] bg-white'
-                                  }`}>
-                                    {isChecked && <div className="w-1.5 h-1.5 rounded-full bg-white"></div>}
-                                  </div>
-                                ) : (
-                                  <div className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 ${
-                                    isChecked ? 'border-[#5A5A40] bg-[#5A5A40]' : 'border-[#E5E2D9] bg-white'
-                                  }`}>
-                                    {isChecked && <CheckCircle className="w-3 h-3 text-white stroke-[3px]" />}
-                                  </div>
-                                )}
-                                <span className="text-sm leading-relaxed whitespace-pre-wrap">{option}</span>
-                              </div>
+                        return (
+                          <div 
+                            key={optIdx}
+                            onClick={() => handleSelectOption(q.id, q.type, optIdx)}
+                            className={`border rounded-xl p-3.5 items-center gap-3 cursor-pointer transition flex justify-between ${
+                              isChecked 
+                                ? 'border-[#5A5A40] bg-[#5A5A40]/5 text-[#1A1A1A] font-medium' 
+                                : 'border-[#E5E2D9] bg-white text-slate-700 hover:border-[#D4A373] hover:bg-[#F9F8F5]/30'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              {/* Custom Radio/Checkbox Visual elements */}
+                              {q.type === 'single' ? (
+                                <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                                  isChecked ? 'border-[#5A5A40] bg-[#5A5A40]' : 'border-[#E5E2D9] bg-white'
+                                }`}>
+                                  {isChecked && <div className="w-1.5 h-1.5 rounded-full bg-white"></div>}
+                                </div>
+                              ) : (
+                                <div className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 ${
+                                  isChecked ? 'border-[#5A5A40] bg-[#5A5A40]' : 'border-[#E5E2D9] bg-white'
+                                }`}>
+                                  {isChecked && <CheckCircle className="w-3 h-3 text-white stroke-[3px]" />}
+                                </div>
+                              )}
+                              <span className="text-sm leading-relaxed whitespace-pre-wrap">{option}</span>
                             </div>
-                          );
-                        })
-                      )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 );
@@ -1132,12 +1110,12 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
               </div>
               <div className="flex justify-between bg-transparent py-1 border-b border-[#F0EFEA]">
                 <span className="text-[#5A5A40]/70">{lang === 'vi' ? 'Phòng ban:' : '配属部門:'}</span>
-                <span className="font-extrabold text-[#1A1A1A]">{formatDept(finalSubmission.employeeDepartment || '', lang) || 'N/A'}</span>
+                <span className="font-extrabold text-[#1A1A1A]">{finalSubmission.employeeDepartment || 'N/A'}</span>
               </div>
               {finalSubmission.employeeTeam && (
                 <div className="flex justify-between bg-transparent py-1 border-b border-[#F0EFEA]">
                   <span className="text-[#5A5A40]/70">{lang === 'vi' ? 'Đội nhóm:' : '所属チーム:'}</span>
-                  <span className="font-extrabold text-[#1A1A1A]">{formatTeam(finalSubmission.employeeTeam, lang)}</span>
+                  <span className="font-extrabold text-[#1A1A1A]">{finalSubmission.employeeTeam}</span>
                 </div>
               )}
               <div className="flex justify-between bg-transparent py-1 border-b border-[#F0EFEA]">
@@ -1197,12 +1175,9 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
                 {lang === 'vi' ? 'Chi tiết đáp án & Điểm thành phần:' : '回答詳細と配点:'}
               </h3>
               {selectedExam.questions.map((q, idx) => {
-                const userSelected = finalSubmission.answers[q.id];
-                const isEssay = q.type === 'essay';
-                const correct = q.correctAnswers || [];
-                const matches = isEssay
-                  ? true
-                  : Array.isArray(userSelected) && userSelected.length === correct.length && userSelected.every(v => correct.includes(v));
+                const userSelected = finalSubmission.answers[q.id] || [];
+                const correct = q.correctAnswers;
+                const matches = userSelected.length === correct.length && userSelected.every(v => correct.includes(v));
 
                 return (
                   <div key={q.id} className="border border-[#E5E2D9] rounded-xl p-4 bg-[#F9F8F5]/25">
@@ -1211,59 +1186,43 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
                         <strong>{lang === 'vi' ? `Câu hỏi ${idx + 1}:` : `問${idx + 1}:`}</strong> {q.text}
                       </span>
                       <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded uppercase ${
-                        isEssay
-                          ? 'bg-[#5A5A40]/10 text-[#5A5A40] border border-[#5A5A40]/20'
-                          : matches ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-rose-50 text-rose-700 border border-rose-100'
+                        matches ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-rose-50 text-rose-700 border border-rose-100'
                       }`}>
-                        {isEssay
-                          ? (lang === 'vi' ? 'Tự luận' : '記述式')
-                          : matches 
-                            ? (lang === 'vi' ? 'Đúng' : '正解') 
-                            : (lang === 'vi' ? 'Sai' : '不正解')
+                        {matches 
+                          ? (lang === 'vi' ? 'Đúng' : '正解') 
+                          : (lang === 'vi' ? 'Sai' : '不正解')
                         }
                       </span>
                     </div>
 
                     <div className="mt-3 space-y-1.5 pl-4 border-l-2 border-[#E5E2D9]">
-                      {isEssay ? (
-                        <div className="text-xs">
-                          <span className="text-[10px] text-slate-400 font-bold block mb-1">
-                            {lang === 'vi' ? 'Câu trả lời của bạn:' : 'あなたの回答:'}
-                          </span>
-                          <p className="bg-white border border-[#E5E2D9] rounded-lg p-3 text-slate-700 whitespace-pre-wrap font-medium">
-                            {typeof userSelected === 'string' ? userSelected : (lang === 'vi' ? '(Chưa trả lời)' : '(未回答)')}
-                          </p>
-                        </div>
-                      ) : (
-                        q.options.map((opt, optIdx) => {
-                          const userSelectedArr = Array.isArray(userSelected) ? userSelected : [];
-                          const isChosen = userSelectedArr.includes(optIdx);
-                          const isCorrectOpt = correct.includes(optIdx);
+                      {q.options.map((opt, optIdx) => {
+                        const isChosen = userSelected.includes(optIdx);
+                        const isCorrectOpt = correct.includes(optIdx);
 
-                          let appearance = 'text-slate-600 text-sm';
-                          if (isChosen && isCorrectOpt) {
-                            appearance = 'text-emerald-700 font-bold flex items-center gap-1.5';
-                          } else if (isChosen && !isCorrectOpt) {
-                            appearance = 'text-rose-600 font-bold flex items-center gap-1.5';
-                          } else if (!isChosen && isCorrectOpt) {
-                            appearance = 'text-[#5A5A40] font-bold flex items-center gap-1.5';
-                          }
+                        let appearance = 'text-slate-600 text-sm';
+                        if (isChosen && isCorrectOpt) {
+                          appearance = 'text-emerald-700 font-bold flex items-center gap-1.5';
+                        } else if (isChosen && !isCorrectOpt) {
+                          appearance = 'text-rose-600 font-bold flex items-center gap-1.5';
+                        } else if (!isChosen && isCorrectOpt) {
+                          appearance = 'text-[#5A5A40] font-bold flex items-center gap-1.5';
+                        }
 
-                          return (
-                            <div key={optIdx} className="text-sm py-0.5 flex flex-wrap items-center gap-2">
-                              <span className={`${appearance} whitespace-pre-wrap`}>{opt}</span>
-                              <div className="flex gap-1 text-[8px] font-bold">
-                                {isChosen && <span className="bg-[#5A5A40]/10 border border-[#5A5A40]/20 px-1 py-0.2 rounded text-[#5A5A40]">
-                                  {t.userSelected}
-                                </span>}
-                                {isCorrectOpt && <span className="bg-emerald-50 border border-emerald-150 px-1 py-0.2 rounded text-emerald-700">
-                                  {t.correctAnswer}
-                                </span>}
-                              </div>
+                        return (
+                          <div key={optIdx} className="text-sm py-0.5 flex flex-wrap items-center gap-2">
+                            <span className={`${appearance} whitespace-pre-wrap`}>{opt}</span>
+                            <div className="flex gap-1 text-[8px] font-bold">
+                              {isChosen && <span className="bg-[#5A5A40]/10 border border-[#5A5A40]/20 px-1 py-0.2 rounded text-[#5A5A40]">
+                                {t.userSelected}
+                              </span>}
+                              {isCorrectOpt && <span className="bg-emerald-50 border border-emerald-150 px-1 py-0.2 rounded text-emerald-700">
+                                {t.correctAnswer}
+                              </span>}
                             </div>
-                          );
-                        })
-                      )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 );

@@ -10,7 +10,6 @@ import { jwtDecode } from 'jwt-decode';
 import ExamPortal from './components/ExamPortal';
 import AdminPanel from './components/AdminPanel';
 import { Member, Language } from './types';
-import { formatDept, formatTeam } from './lib/localization';
 import { 
   getStoredMembers, saveMembers, getStoredLanguage, saveLanguage, initSharedDatabase
 } from './lib/database';
@@ -290,7 +289,7 @@ export default function App() {
               <div className="hidden lg:flex flex-col text-right mr-3 border-r border-[#E5E2D9] pr-3">
                 <span className="text-xs font-bold text-slate-800 leading-none">{currentMember.name}</span>
                 <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mt-1">
-                  {formatDept(currentMember.department || '', lang)} • {currentMember.role === 'superadmin' ? 'Super Admin' : currentMember.role === 'admin' ? 'Admin' : 'Member'}
+                  {currentMember.department} • {currentMember.role === 'superadmin' ? 'Super Admin' : currentMember.role === 'admin' ? 'Admin' : 'Member'}
                 </span>
               </div>
             )}
@@ -496,7 +495,7 @@ export default function App() {
                   <p className="text-[#F5EBE0] text-xs sm:text-sm font-bold font-mono tracking-wider bg-black/25 px-5 py-2 rounded-full w-max mx-auto border border-white/15">
                     {lang === 'vi' ? 'Chào nhân viên: ' : 'ようこそ、社員: '}
                     <span className="font-serif italic underline text-white font-extrabold text-sm sm:text-base">{currentMember.name}</span> 
-                    {` (${formatDept(currentMember.department || '', lang)})`}
+                    {` (${currentMember.department})`}
                   </p>
                 )}
 
