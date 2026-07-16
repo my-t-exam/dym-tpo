@@ -15,7 +15,7 @@ import {
   saveSubmissions, getStoredSheetsUrl, saveSheetsUrl, 
   syncWithGoogleSheets, getStoredMembers, saveMembers,
   getStoredDepartments, saveDepartments, getStoredTeams, saveStoredTeams,
-  getStoredAuditLogs, saveAuditLogs, addAuditLog
+  getStoredAuditLogs, saveAuditLogs, addAuditLog, calculateScore
 } from '../lib/database';
 import GasExport from './GasExport';
 import { translations } from '../data/translations';
@@ -1412,34 +1412,18 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                                 const now = Date.now();
                                 const start = new Date(ex.startTime).getTime();
                                 const end = new Date(ex.endTime).getTime();
-                                if (now < start) {
+                                if (now >= start && now <= end) {
                                   return (
-                                    <span className="bg-slate-100 text-slate-600 border border-slate-200 text-[9px] uppercase font-extrabold px-2 py-0.5 rounded flex items-center gap-1 shrink-0">
-                                      <span className="w-1 bg-slate-400 h-1 rounded-full"></span>
-                                      {lang === 'vi' ? 'Sắp mở' : '配信予定'}
-                                    </span>
-                                  );
-                                } else if (now >= start && now <= end) {
-                                  const hoursRemaining = (end - now) / (1000 * 60 * 60);
-                                  if (hoursRemaining <= 24) {
-                                    return (
-                                      <span className="bg-amber-50 text-amber-700 border border-amber-200 text-[9px] uppercase font-extrabold px-2 py-0.5 rounded flex items-center gap-1 shrink-0 animate-pulse">
-                                        <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-ping"></span>
-                                        {lang === 'vi' ? '🟡 Sắp đóng (<24h)' : 'まもなく終了'}
-                                      </span>
-                                    );
-                                  }
-                                  return (
-                                    <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[9px] uppercase font-extrabold px-2 py-0.5 rounded flex items-center gap-1 shrink-0">
-                                      <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping"></span>
-                                      {lang === 'vi' ? '🟢 Đang mở' : '受検可能'}
+                                    <span className="bg-[#E8F5E9] text-[#2E7D32] border border-[#A5D6A7] text-[9px] uppercase font-extrabold px-2 py-0.5 rounded flex items-center gap-1 shrink-0">
+                                      <span className="w-1.5 h-1.5 bg-[#4CAF50] rounded-full animate-pulse"></span>
+                                      {lang === 'vi' ? 'ĐANG MỞ' : '受検可能'}
                                     </span>
                                   );
                                 } else {
                                   return (
-                                    <span className="bg-rose-50 text-rose-700 border border-rose-200 text-[9px] uppercase font-extrabold px-2 py-0.5 rounded flex items-center gap-1 shrink-0">
-                                      <span className="w-1 bg-rose-500 h-1 rounded-full"></span>
-                                      {lang === 'vi' ? '🔴 Đã đóng' : '終了'}
+                                    <span className="bg-[#FFEBEE] text-[#C62828] border border-[#FFCDD2] text-[9px] uppercase font-extrabold px-2 py-0.5 rounded flex items-center gap-1 shrink-0">
+                                      <span className="w-1 h-1 bg-[#F44336] rounded-full"></span>
+                                      {lang === 'vi' ? 'ĐANG ĐÓNG' : '終了'}
                                     </span>
                                   );
                                 }
@@ -3888,9 +3872,22 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                         {lang === 'vi' ? `Câu ${qIndex + 1}:` : `問 ${qIndex + 1}:`} {q.text}
                       </span>
                       {q.type === 'essay' ? (
-                        <span className="text-[9px] font-bold px-2 py-0.5 rounded shrink-0 bg-blue-50 text-blue-700 border border-blue-100">
-                          {lang === 'vi' ? 'Tự luận' : '記述式'}
-                        </span>
+                        (() => {
+                          const essayGrade = selectedSubmission.essayGrades?.[q.id];
+                          const isGraded = essayGrade !== undefined;
+                          return (
+                            <span className={`text-[9px] font-bold px-2 py-0.5 rounded shrink-0 border ${
+                              isGraded 
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-100' 
+                                : 'bg-amber-50 text-amber-700 border-amber-200'
+                            }`}>
+                              {isGraded 
+                                ? (lang === 'vi' ? `Đã chấm: ${essayGrade}/${q.points}đ` : `採点済: ${essayGrade}/${q.points}点`) 
+                                : (lang === 'vi' ? 'Chờ chấm điểm' : '採点待ち')
+                              }
+                            </span>
+                          );
+                        })()
                       ) : (
                         <span className={`text-[9px] font-bold px-2 py-0.5 rounded shrink-0 ${
                           correctMatches ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-rose-50 text-rose-700 border border-rose-100'
@@ -3901,14 +3898,54 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
                     </div>
 
                     {q.type === 'essay' ? (
-                      <div className="mt-3 pl-4 border-l-2 border-slate-200 text-xs">
-                        <span className="block text-slate-400 font-bold uppercase text-[9px] mb-1">
-                          {lang === 'vi' ? 'Câu trả lời của người thi:' : '受検者の回答:'}
-                        </span>
-                        <div className="bg-slate-100/70 border border-slate-200 rounded-lg p-3 text-slate-800 font-medium whitespace-pre-wrap leading-relaxed">
-                          {typeof userChoice[0] === 'string'
-                            ? userChoice[0]
-                            : (lang === 'vi' ? '(Chưa trả lời)' : '(未回答)')}
+                      <div className="mt-3 space-y-3 pl-4 border-l-2 border-slate-200 text-xs">
+                        <div>
+                          <span className="block text-slate-400 font-bold uppercase text-[9px] mb-1">
+                            {lang === 'vi' ? 'Câu trả lời của người thi:' : '受検者の回答:'}
+                          </span>
+                          <div className="bg-slate-100/70 border border-slate-200 rounded-lg p-3 text-slate-800 font-medium whitespace-pre-wrap leading-relaxed">
+                            {typeof userChoice[0] === 'string'
+                              ? userChoice[0]
+                              : (lang === 'vi' ? '(Chưa trả lời)' : '(未回答)')}
+                          </div>
+                        </div>
+
+                        {/* GRADING COMPONENT FOR ADMINS */}
+                        <div className="pt-2.5 border-t border-dashed border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-amber-50/40 p-2.5 rounded-lg border border-amber-100/50">
+                          <span className="text-xs font-bold text-slate-700">
+                            {lang === 'vi' ? `Chấm điểm cho câu này (0 - ${q.points}đ):` : `この設問の採点 (0 - ${q.points}点):`}
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="number"
+                              min={0}
+                              max={q.points}
+                              step={0.5}
+                              value={selectedSubmission.essayGrades?.[q.id] ?? ''}
+                              placeholder="0"
+                              onChange={(e) => {
+                                const val = parseFloat(e.target.value);
+                                const grade = isNaN(val) ? 0 : Math.min(q.points, Math.max(0, val));
+                                
+                                const updatedGrades = {
+                                  ...(selectedSubmission.essayGrades || {}),
+                                  [q.id]: grade
+                                };
+
+                                const exam = exams.find(ex => ex.id === selectedSubmission.examId);
+                                if (exam) {
+                                  const { score } = calculateScore(exam, selectedSubmission.answers, updatedGrades);
+                                  setSelectedSubmission({
+                                    ...selectedSubmission,
+                                    essayGrades: updatedGrades,
+                                    score: score
+                                  });
+                                }
+                              }}
+                              className="w-20 px-2 py-1 text-xs text-center font-bold border border-slate-300 rounded focus:outline-none focus:border-[#5A5A40] bg-white"
+                            />
+                            <span className="text-xs text-slate-500 font-bold">/ {q.points} {lang === 'vi' ? 'điểm' : '点'}</span>
+                          </div>
                         </div>
                       </div>
                     ) : (
@@ -3947,7 +3984,7 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
               })}
             </div>
 
-            {/* Modal action buttons */}
+             {/* Modal action buttons */}
             <div className="pt-4 border-t border-slate-200 flex justify-end gap-2 text-xs">
               <button
                 onClick={() => setSelectedSubmission(null)}
@@ -3955,9 +3992,46 @@ export default function AdminPanel({ onBackToPortal, currentMember, lang, onMemb
               >
                 {lang === 'vi' ? 'Đóng cửa sổ' : '閉じる'}
               </button>
+
+              {(() => {
+                const exam = exams.find(e => e.id === selectedSubmission.examId);
+                const hasEssay = exam?.questions.some(q => q.type === 'essay') || false;
+                if (!hasEssay) return null;
+                return (
+                  <button
+                    onClick={() => {
+                      const allSubs = getStoredSubmissions();
+                      const nextSubs = allSubs.map(s => s.id === selectedSubmission.id ? selectedSubmission : s);
+                      saveSubmissions(nextSubs);
+                      setSubmissions(nextSubs);
+                      
+                      addAuditLog(
+                        'Chấm điểm tự luận | 記述式採点',
+                        currentMember.name,
+                        currentMember.email,
+                        `Đã chấm điểm tự luận cho bài thi "${selectedSubmission.examTitle}" của "${selectedSubmission.employeeName}" (${selectedSubmission.employeeEmail}). Điểm: ${selectedSubmission.score}/${selectedSubmission.maxScore}`
+                      );
+
+                      alert(lang === 'vi' ? 'Đã lưu điểm chấm tự luận thành công!' : '記述式採点の結果を保存しました！');
+                      setSelectedSubmission(null);
+                    }}
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition cursor-pointer"
+                  >
+                    {lang === 'vi' ? 'Lưu điểm chấm' : '採点結果を保存'}
+                  </button>
+                );
+              })()}
               
               <button
                 onClick={() => {
+                  const exam = exams.find(e => e.id === selectedSubmission.examId);
+                  const hasEssay = exam?.questions.some(q => q.type === 'essay') || false;
+                  if (hasEssay) {
+                    const allSubs = getStoredSubmissions();
+                    const nextSubs = allSubs.map(s => s.id === selectedSubmission.id ? selectedSubmission : s);
+                    saveSubmissions(nextSubs);
+                    setSubmissions(nextSubs);
+                  }
                   handleSyncToSheets(selectedSubmission);
                   setSelectedSubmission(null);
                 }}

@@ -594,34 +594,18 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
                               const now = Date.now();
                               const start = new Date(ex.startTime).getTime();
                               const end = new Date(ex.endTime).getTime();
-                              if (now < start) {
+                              if (now >= start && now <= end) {
                                 return (
-                                  <span className="bg-slate-100 text-slate-600 border border-slate-200 text-[9px] uppercase font-extrabold px-2 py-0.5 rounded flex items-center gap-1 shrink-0">
-                                    <span className="w-1 bg-slate-400 h-1 rounded-full"></span>
-                                    {lang === 'vi' ? 'Sắp mở' : '配信予定'}
-                                  </span>
-                                );
-                              } else if (now >= start && now <= end) {
-                                const hoursRemaining = (end - now) / (1000 * 60 * 60);
-                                if (hoursRemaining <= 24) {
-                                  return (
-                                    <span className="bg-amber-50 text-amber-700 border border-amber-200 text-[9px] uppercase font-extrabold px-2 py-0.5 rounded flex items-center gap-1 shrink-0 animate-pulse">
-                                      <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-ping"></span>
-                                      {lang === 'vi' ? '🟡 Sắp đóng (<24h)' : 'まもなく終了'}
-                                    </span>
-                                  );
-                                }
-                                return (
-                                  <span className="bg-emerald-50 text-emerald-700 border border-emerald-100 text-[9px] uppercase font-extrabold px-2 py-0.5 rounded flex items-center gap-1 shrink-0">
-                                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping"></span>
-                                    {lang === 'vi' ? '🟢 Đang mở' : '受検可能'}
+                                  <span className="bg-[#E8F5E9] text-[#2E7D32] border border-[#A5D6A7] text-[9px] uppercase font-extrabold px-2 py-0.5 rounded flex items-center gap-1 shrink-0">
+                                    <span className="w-1.5 h-1.5 bg-[#4CAF50] rounded-full animate-pulse"></span>
+                                    {lang === 'vi' ? 'ĐANG MỞ' : '受検可能'}
                                   </span>
                                 );
                               } else {
                                 return (
-                                  <span className="bg-rose-50 text-rose-700 border border-rose-250 text-[9px] uppercase font-extrabold px-2 py-0.5 rounded flex items-center gap-1 shrink-0">
-                                    <span className="w-1 bg-rose-500 h-1 rounded-full"></span>
-                                    {lang === 'vi' ? '🔴 Đã đóng' : '終了'}
+                                  <span className="bg-[#FFEBEE] text-[#C62828] border border-[#FFCDD2] text-[9px] uppercase font-extrabold px-2 py-0.5 rounded flex items-center gap-1 shrink-0">
+                                    <span className="w-1 h-1 bg-[#F44336] rounded-full"></span>
+                                    {lang === 'vi' ? 'ĐANG ĐÓNG' : '終了'}
                                   </span>
                                 );
                               }
@@ -1173,6 +1157,41 @@ export default function ExamPortal({ currentMember, lang }: ExamPortalProps) {
                 const userSelected = finalSubmission.answers[q.id] || [];
                 const correct = q.correctAnswers;
                 const matches = userSelected.length === correct.length && userSelected.every(v => correct.includes(v));
+
+                if (q.type === 'essay') {
+                  const essayGrade = finalSubmission.essayGrades?.[q.id];
+                  const isGraded = essayGrade !== undefined;
+                  return (
+                    <div key={q.id} className="border border-[#E5E2D9] rounded-xl p-4 bg-[#F9F8F5]/25">
+                      <div className="flex justify-between items-start gap-2">
+                        <span className="text-xs font-semibold text-[#1A1A1A] whitespace-pre-wrap">
+                          <strong>{lang === 'vi' ? `Câu hỏi ${idx + 1}:` : `問${idx + 1}:`}</strong> {q.text}
+                        </span>
+                        <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded uppercase ${
+                          isGraded 
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' 
+                            : 'bg-amber-50 text-amber-700 border border-amber-200'
+                        }`}>
+                          {isGraded 
+                            ? (lang === 'vi' ? `Đã chấm: ${essayGrade}/${q.points}đ` : `採点済: ${essayGrade}/${q.points}点`) 
+                            : (lang === 'vi' ? 'Tự luận - Chờ chấm điểm' : '記述式 - 採点待ち')
+                          }
+                        </span>
+                      </div>
+
+                      <div className="mt-3 pl-4 border-l-2 border-[#E5E2D9] text-xs">
+                        <span className="block text-slate-400 font-bold uppercase text-[9px] mb-1">
+                          {lang === 'vi' ? 'Câu trả lời của bạn:' : 'あなたの回答:'}
+                        </span>
+                        <div className="bg-slate-100/70 border border-slate-200 rounded-lg p-3 text-slate-800 font-medium whitespace-pre-wrap leading-relaxed">
+                          {typeof userSelected[0] === 'string'
+                            ? userSelected[0]
+                            : (lang === 'vi' ? '(Chưa trả lời)' : '(未回答)')}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
 
                 return (
                   <div key={q.id} className="border border-[#E5E2D9] rounded-xl p-4 bg-[#F9F8F5]/25">

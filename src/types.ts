@@ -35,6 +35,7 @@ export interface Submission {
   employeeDepartment?: string;
   employeeTeam?: string;
   answers: Record<string, (number | string)[]>; // question.id -> list of selected option indices OR [free text] for essay
+  essayGrades?: Record<string, number>; // question.id -> points awarded for essay questions
   score: number;
   maxScore: number;
   submittedAt: string;
